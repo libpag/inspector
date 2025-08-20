@@ -280,7 +280,8 @@ void LayerProfilerView::ProcessMessage(const QByteArray& message) {
   }
 }
 
-QByteArray LayerProfilerView::feedBackData(tgfx::debug::LayerInspectorMsgType type, uint64_t value) {
+QByteArray LayerProfilerView::feedBackData(tgfx::debug::LayerInspectorMsgType type,
+                                           uint64_t value) {
   flexbuffers::Builder fbb;
   auto mapStart = fbb.StartMap();
   fbb.Key("Type");

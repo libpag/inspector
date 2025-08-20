@@ -17,7 +17,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "StartView.h"
-
 #include <QApplication>
 #include <QFileInfo>
 #include <QQmlContext>
@@ -266,7 +265,7 @@ void StartView::updateBroadcastClients() {
           resolvLock.lock();
           if (resolvMap.find(ip) == resolvMap.end()) {
             resolvMap.emplace(ip, ip);
-            resolv.Query(ipNumerical, [&, ip](std::string&& name) {
+            resolv.query(ipNumerical, [&, ip](std::string&& name) {
               std::lock_guard<std::mutex> lock(resolvLock);
               auto iter = resolvMap.find(ip);
               assert(iter != resolvMap.end());

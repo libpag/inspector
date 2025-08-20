@@ -63,7 +63,8 @@ static std::unordered_map<uint8_t, const char*> OpTaskName = {
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::ShapeBufferUploadTask), "ShapeBufferUploadTask"},
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::GpuUploadTask), "GpuUploadTask"},
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureCreateTask), "TextureCreateTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTargetCreateTask), "RenderTargetCreateTask"},
+    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTargetCreateTask),
+     "RenderTargetCreateTask"},
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureFlattenTask), "TextureFlattenTask"},
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTask), "RenderTask"},
     {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTargetCopyTask), "RenderTargetCopyTask"},
@@ -97,7 +98,8 @@ static std::unordered_map<tgfx::debug::CustomEnumType, std::vector<std::string>>
       "ColorDodge",  "ColorBurn", "HardLight",  "SoftLight", "Difference", "Exclusion",
       "Multiply",    "Hue",       "Saturation", "Color",     "Luminosity", "PlusDarker"}},
     {tgfx::debug::CustomEnumType::AAType, {"None", "Coverage", "MSAA"}},
-    {tgfx::debug::CustomEnumType::PixelFormat, {"Unknown", "ALPHA_8", "GRAY_8", "RG_88", "RGBA_8888", "BGRA_8888"}},
+    {tgfx::debug::CustomEnumType::PixelFormat,
+     {"Unknown", "ALPHA_8", "GRAY_8", "RG_88", "RGBA_8888", "BGRA_8888"}},
     {tgfx::debug::CustomEnumType::ImageOrigin, {"TopLeft", "BottomLeft"}},
 };
 

@@ -28,7 +28,7 @@ bool isEqual(float num1, float num2) {
   return abs(num1 - num2) < 0.00001;
 }
 
-tgfx::Color getTgfxColor(uint32_t color) {
+tgfx::Color GetTgfxColor(uint32_t color) {
   uint8_t r = (color)&0xFF;
   uint8_t g = (color >> 8) & 0xFF;
   uint8_t b = (color >> 16) & 0xFF;
@@ -36,7 +36,7 @@ tgfx::Color getTgfxColor(uint32_t color) {
   return tgfx::Color::FromRGBA(r, g, b, a);
 }
 
-tgfx::Rect getTextSize(const AppHost* appHost, const char* text, size_t textSize, float fontSize) {
+tgfx::Rect GetTextSize(const AppHost* appHost, const char* text, size_t textSize, float fontSize) {
   std::string strText(text);
   auto iter = TextSizeMap.find(strText);
   if (iter != TextSizeMap.end()) {
@@ -53,9 +53,9 @@ tgfx::Rect getTextSize(const AppHost* appHost, const char* text, size_t textSize
   return rect;
 }
 
-void drawPath(tgfx::Canvas* canvas, tgfx::Path& path, uint32_t color, float thickness) {
+void DrawPath(tgfx::Canvas* canvas, tgfx::Path& path, uint32_t color, float thickness) {
   tgfx::Paint paint;
-  paint.setColor(getTgfxColor(color));
+  paint.setColor(GetTgfxColor(color));
   if (thickness > 0.f) {
     paint.setStyle(tgfx::PaintStyle::Stroke);
     paint.setStrokeWidth(thickness);
@@ -65,21 +65,21 @@ void drawPath(tgfx::Canvas* canvas, tgfx::Path& path, uint32_t color, float thic
   canvas->drawPath(path, paint);
 }
 
-void drawRect(tgfx::Canvas* canvas, float x0, float y0, float w, float h, uint32_t color,
+void DrawRect(tgfx::Canvas* canvas, float x0, float y0, float w, float h, uint32_t color,
               float thickness) {
   tgfx::Rect rect = tgfx::Rect::MakeXYWH(x0, y0, w, h);
-  drawRect(canvas, rect, color, thickness);
+  DrawRect(canvas, rect, color, thickness);
 }
 
-void drawRect(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color,
+void DrawRect(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color,
               float thickness) {
   tgfx::Rect rect = tgfx::Rect::MakeXYWH(p1.x, p1.y, p2.x, p2.y);
-  drawRect(canvas, rect, color, thickness);
+  DrawRect(canvas, rect, color, thickness);
 }
 
-void drawRect(tgfx::Canvas* canvas, tgfx::Rect& rect, uint32_t color, float thickness) {
+void DrawRect(tgfx::Canvas* canvas, tgfx::Rect& rect, uint32_t color, float thickness) {
   tgfx::Paint paint;
-  paint.setColor(getTgfxColor(color));
+  paint.setColor(GetTgfxColor(color));
   if (thickness > 0.f) {
     paint.setStyle(tgfx::PaintStyle::Stroke);
     paint.setStrokeWidth(thickness);
@@ -89,12 +89,12 @@ void drawRect(tgfx::Canvas* canvas, tgfx::Rect& rect, uint32_t color, float thic
   canvas->drawRect(rect, paint);
 }
 
-void drawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, tgfx::Point& p3,
+void DrawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, tgfx::Point& p3,
               uint32_t color, float thickness) {
   tgfx::Paint paint;
   paint.setStroke(tgfx::Stroke(thickness));
   paint.setStyle(tgfx::PaintStyle::Stroke);
-  paint.setColor(getTgfxColor(color));
+  paint.setColor(GetTgfxColor(color));
   tgfx::Path path;
   path.moveTo(p1);
   path.lineTo(p2);
@@ -102,44 +102,44 @@ void drawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, tgfx::Poin
   canvas->drawPath(path, paint);
 }
 
-void drawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color) {
-  drawLine(canvas, p1.x, p1.y, p2.x, p2.y, color);
+void DrawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color) {
+  DrawLine(canvas, p1.x, p1.y, p2.x, p2.y, color);
 }
 
-void drawLine(tgfx::Canvas* canvas, float x0, float y0, float x1, float y1, uint32_t color) {
+void DrawLine(tgfx::Canvas* canvas, float x0, float y0, float x1, float y1, uint32_t color) {
   if (isEqual(x0, x1) && isEqual(y0, y1)) {
     return;
   }
   tgfx::Paint paint;
-  paint.setColor(getTgfxColor(color));
+  paint.setColor(GetTgfxColor(color));
   canvas->drawLine(x0, y0, x1, y1, paint);
 }
 
-void drawText(tgfx::Canvas* canvas, const AppHost* appHost, const std::string& text, float x,
+void DrawText(tgfx::Canvas* canvas, const AppHost* appHost, const std::string& text, float x,
               float y, uint32_t color, float fontSize) {
   tgfx::Paint paint;
-  paint.setColor(getTgfxColor(color));
+  paint.setColor(GetTgfxColor(color));
   auto typeface = appHost->getTypeface("default");
   tgfx::Font font(typeface, fontSize);
   canvas->drawSimpleText(text, x, y, font, paint);
 }
 
-void drawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, tgfx::Point pos, uint32_t color,
+void DrawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, tgfx::Point pos, uint32_t color,
                       const char* text, float fontSize) {
-  drawTextContrast(canvas, appHost, pos.x, pos.y, color, text, fontSize);
+  DrawTextContrast(canvas, appHost, pos.x, pos.y, color, text, fontSize);
 }
 
-void drawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, float x, float y,
+void DrawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, float x, float y,
                       uint32_t color, const char* text, float fontSize) {
-  auto height = abs(getTextSize(appHost, text).top) + 1;
-  drawText(canvas, appHost, text, x + 0.5f, y + height + 0.5f, 0xAA000000, fontSize);
-  drawText(canvas, appHost, text, x, y + height, color, fontSize);
+  auto height = abs(GetTextSize(appHost, text).top) + 1;
+  DrawText(canvas, appHost, text, x + 0.5f, y + height + 0.5f, 0xAA000000, fontSize);
+  DrawText(canvas, appHost, text, x, y + height, color, fontSize);
 }
 
-void drawTextWithBlackRect(tgfx::Canvas* canvas, const AppHost* appHost, const char* text, float x,
+void DrawTextWithBlackRect(tgfx::Canvas* canvas, const AppHost* appHost, const char* text, float x,
                            float y, uint32_t color, float fontSize) {
-  auto textBounds = getTextSize(appHost, text);
-  drawRect(canvas, x, y - textBounds.height(), textBounds.width(), textBounds.height(), 0xFF000000);
-  drawText(canvas, appHost, text, x + 1, y - 1.5f, color, fontSize);
+  auto textBounds = GetTextSize(appHost, text);
+  DrawRect(canvas, x, y - textBounds.height(), textBounds.width(), textBounds.height(), 0xFF000000);
+  DrawText(canvas, appHost, text, x + 1, y - 1.5f, color, fontSize);
 }
 }  // namespace inspector

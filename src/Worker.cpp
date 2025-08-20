@@ -23,9 +23,9 @@
 #include "DecodeStream.h"
 #include "EncodeStream.h"
 #include "FileTags.h"
-#include "lz4.h"
 #include "Protocol.h"
 #include "TagHeader.h"
+#include "lz4.h"
 #include "tgfx/core/Data.h"
 
 namespace inspector {
@@ -47,9 +47,8 @@ Worker::Worker(std::string& filePath)
   openFile(filePath);
 }
 
-Worker::~Worker() {
+Worker::~Worker() override {
   shutdown();
-
   if (netThread.joinable()) {
     netThread.join();
   }
@@ -202,7 +201,8 @@ void Worker::exec() {
   sock.sendData(&protocolVersion, sizeof(protocolVersion));
   tgfx::debug::HandshakeStatus handshake;
   if (!sock.readData(&handshake, sizeof(handshake), 10, ShouldExit)) {
-    this->handshake.store(static_cast<uint8_t>(tgfx::debug::HandshakeStatus::HandshakeDropped), std::memory_order_relaxed);
+    this->handshake.store(static_cast<uint8_t>(tgfx::debug::HandshakeStatus::HandshakeDropped),
+                          std::memory_order_relaxed);
     CLOSE_EXEC;
   }
   this->handshake.store(static_cast<uint8_t>(handshake), std::memory_order_relaxed);
@@ -218,19 +218,20 @@ void Worker::exec() {
   {
     tgfx::debug::WelcomeMessage welcome;
     if (!sock.readData(&welcome, sizeof(welcome), 10, ShouldExit)) {
-      this->handshake.store(static_cast<uint8_t>(tgfx::debug::HandshakeStatus::HandshakeDropped), std::memory_order_relaxed);
+      this->handshake.store(static_cast<uint8_t>(tgfx::debug::HandshakeStatus::HandshakeDropped),
+                            std::memory_order_relaxed);
       CLOSE_EXEC;
     }
     dataContext.baseTime = welcome.initBegin;
-    const auto initEnd = TscTime(welcome.initEnd);
+    const auto initEnd = tscTime(welcome.initEnd);
     dataContext.frameData.frames.push_back(FrameEvent{0, -1, 0, 0, -1});
     dataContext.frameData.frames.push_back(FrameEvent{initEnd, -1, 0, 0, -1});
     dataContext.lastTime = initEnd;
     refTime = welcome.refTime;
   }
   // leave space for terminate request
-  serverQuerySpaceLeft = serverQuerySpaceBase =
-      size_t(std::min(sock.getSendBufferSize() / static_cast<int>(ServerQueryPacketSize), 8 * 1024) - 4);
+  serverQuerySpaceLeft = serverQuerySpaceBase = size_t(
+      std::min(sock.getSendBufferSize() / static_cast<int>(ServerQueryPacketSize), 8 * 1024) - 4);
   hasData.store(true, std::memory_order_release);
 
   LZ4_setStreamDecode((LZ4_streamDecode_t*)lz4Stream, nullptr, 0);
@@ -243,7 +244,7 @@ void Worker::exec() {
 
   while (true) {
     if (isShutDown.load(std::memory_order_relaxed)) {
-      QueryTerminate();
+      queryTerminate();
       CLOSE_EXEC;
     }
 
@@ -266,8 +267,8 @@ void Worker::exec() {
       std::lock_guard<std::mutex> lock(dataContext.lock);
       while (ptr < end) {
         auto ev = (const tgfx::debug::MsgItem*)ptr;
-        if (!DispatchProcess(*ev, ptr)) {
-          QueryTerminate();
+        if (!dispatchProcess(*ev, ptr)) {
+          queryTerminate();
           CLOSE_EXEC;
         }
       }
@@ -372,7 +373,7 @@ void Worker::newOpTask(std::shared_ptr<OpTaskData> opTask) {
   stack.push_back(opTask);
 }
 
-void Worker::Query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra) {
+void Worker::query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra) {
   tgfx::debug::ServerQueryPacket query{type, data, extra};
   if (serverQuerySpaceLeft > 0 && serverQueryQueuePrio.empty() && serverQueryQueue.empty()) {
     serverQuerySpaceLeft--;
@@ -384,12 +385,12 @@ void Worker::Query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra)
   }
 }
 
-void Worker::QueryTerminate() {
+void Worker::queryTerminate() {
   tgfx::debug::ServerQueryPacket query{tgfx::debug::ServerQuery::ServerQueryTerminate, 0, 0};
   sock.sendData(&query, ServerQueryPacketSize);
 }
 
-bool Worker::DispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr) {
+bool Worker::dispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr) {
   if (ev.hdr.idx >= static_cast<uint8_t>(tgfx::debug::MsgType::StringData)) {
     ptr += sizeof(tgfx::debug::MsgHeader) + sizeof(tgfx::debug::StringTransferMsg);
     uint16_t sz;
@@ -401,7 +402,7 @@ bool Worker::DispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr) {
         break;
       }
       case tgfx::debug::MsgType::ValueName: {
-        HandleValueName(ev.stringTransfer.ptr, ptr, sz);
+        handleValueName(ev.stringTransfer.ptr, ptr, sz);
         serverQuerySpaceLeft++;
         break;
       }
@@ -413,43 +414,43 @@ bool Worker::DispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr) {
     return true;
   }
   ptr += tgfx::debug::MsgDataSize[ev.hdr.idx];
-  return Process(ev);
+  return process(ev);
 }
 
-bool Worker::Process(const tgfx::debug::MsgItem& ev) {
+bool Worker::process(const tgfx::debug::MsgItem& ev) {
   switch (ev.hdr.type) {
     case tgfx::debug::MsgType::OperateBegin:
-      ProcessOperateBegin(ev.operateBegin);
+      processOperateBegin(ev.operateBegin);
       break;
     case tgfx::debug::MsgType::OperateEnd:
-      ProcessOperateEnd(ev.operateEnd);
+      processOperateEnd(ev.operateEnd);
       break;
     case tgfx::debug::MsgType::ValueDataUint32:
-      ProcessUint32Value(ev.attributeDataUint32);
+      processUint32Value(ev.attributeDataUint32);
       break;
     case tgfx::debug::MsgType::ValueDataFloat4:
-      ProcessFloat4Value(ev.attributeDataFloat4);
+      processFloat4Value(ev.attributeDataFloat4);
       break;
     case tgfx::debug::MsgType::ValueDataMat3:
-      ProcessMat4Value(ev.attributeDataMat4);
+      processMat4Value(ev.attributeDataMat4);
       break;
     case tgfx::debug::MsgType::ValueDataInt:
-      ProcessIntValue(ev.attributeDataInt);
+      processIntValue(ev.attributeDataInt);
       break;
     case tgfx::debug::MsgType::ValueDataColor:
-      ProcessColorValue(ev.attributeDataUint32);
+      processColorValue(ev.attributeDataUint32);
       break;
     case tgfx::debug::MsgType::ValueDataFloat:
-      ProcessFloatValue(ev.attributeDataFloat);
+      processFloatValue(ev.attributeDataFloat);
       break;
     case tgfx::debug::MsgType::ValueDataBool:
-      ProcessBoolValue(ev.attributeDataBool);
+      processBoolValue(ev.attributeDataBool);
       break;
     case tgfx::debug::MsgType::ValueDataEnum:
-      ProcessEnumValue(ev.attributeDataEnum);
+      processEnumValue(ev.attributeDataEnum);
       break;
     case tgfx::debug::MsgType::FrameMarkMsg:
-      ProcessFrameMark(ev.frameMark);
+      processFrameMark(ev.frameMark);
       break;
     case tgfx::debug::MsgType::KeepAlive:
       break;
@@ -465,9 +466,9 @@ int64_t RefTime(int64_t& reference, int64_t delta) {
   return refTime;
 }
 
-void Worker::ProcessOperateBegin(const tgfx::debug::OperateBeginMsg& ev) {
+void Worker::processOperateBegin(const tgfx::debug::OperateBeginMsg& ev) {
   std::shared_ptr<OpTaskData> opTask(new OpTaskData);
-  const auto start = TscTime(RefTime(refTime, ev.nsTime));
+  const auto start = tscTime(RefTime(refTime, ev.nsTime));
   opTask->start = start;
   opTask->end = -1;
   opTask->type = ev.type;
@@ -475,7 +476,7 @@ void Worker::ProcessOperateBegin(const tgfx::debug::OperateBeginMsg& ev) {
   newOpTask(std::move(opTask));
 }
 
-void Worker::ProcessOperateEnd(const tgfx::debug::OperateEndMsg& ev) {
+void Worker::processOperateEnd(const tgfx::debug::OperateEndMsg& ev) {
   auto& stack = dataContext.opTaskStack;
   if (stack.empty()) {
     return;
@@ -484,12 +485,12 @@ void Worker::ProcessOperateEnd(const tgfx::debug::OperateEndMsg& ev) {
   stack.pop_back();
   assert(opTask->end == -1);
   assert(opTask->type == ev.type);
-  const auto timeEnd = TscTime(RefTime(refTime, ev.nsTime));
+  const auto timeEnd = tscTime(RefTime(refTime, ev.nsTime));
   opTask->end = timeEnd;
   assert(timeEnd >= opTask->start);
 }
 
-void Worker::ProcessAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> data) {
+void Worker::processAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> data) {
   auto& stack = dataContext.opTaskStack;
   if (stack.empty()) {
     return;
@@ -504,7 +505,7 @@ void Worker::ProcessAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> da
     propertyData = propertyIter->second;
   }
   if (nameMap.find(head.name) == nameMap.end()) {
-    Query(tgfx::debug::ServerQuery::ServerQueryValueName, head.name);
+    query(tgfx::debug::ServerQuery::ServerQueryValueName, head.name);
   }
   propertyData->summaryName.push_back(head);
   auto& summaryData = propertyData->summaryData;
@@ -512,65 +513,65 @@ void Worker::ProcessAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> da
   dataContext.properties[opTask->id] = propertyData;
 }
 
-void Worker::ProcessFloatValue(const tgfx::debug::AttributeDataFloatMsg& ev) {
+void Worker::processFloatValue(const tgfx::debug::AttributeDataFloatMsg& ev) {
   auto head = DataHead{DataType::Float, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(float));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessFloat4Value(const tgfx::debug::AttributeDataFloat4Msg& ev) {
+void Worker::processFloat4Value(const tgfx::debug::AttributeDataFloat4Msg& ev) {
   auto head = DataHead{DataType::Vec4, ev.name};
   auto data = tgfx::Data::MakeWithCopy(ev.value, sizeof(float) * 4);
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessIntValue(const tgfx::debug::AttributeDataIntMsg& ev) {
+void Worker::processIntValue(const tgfx::debug::AttributeDataIntMsg& ev) {
   auto head = DataHead{DataType::Int, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(int));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessBoolValue(const tgfx::debug::AttributeDataBoolMsg& ev) {
+void Worker::processBoolValue(const tgfx::debug::AttributeDataBoolMsg& ev) {
   auto head = DataHead{DataType::Bool, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(bool));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessMat4Value(const tgfx::debug::AttributeDataMat4Msg& ev) {
+void Worker::processMat4Value(const tgfx::debug::AttributeDataMat4Msg& ev) {
   auto head = DataHead{DataType::Mat4, ev.name};
   auto data = tgfx::Data::MakeWithCopy(ev.value, sizeof(float) * 6);
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessEnumValue(const tgfx::debug::AttributeDataEnumMsg& ev) {
+void Worker::processEnumValue(const tgfx::debug::AttributeDataEnumMsg& ev) {
   auto head = DataHead{DataType::Enum, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(uint16_t));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev) {
+void Worker::processUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev) {
   auto head = DataHead{DataType::Uint32, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(uint32_t));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev) {
+void Worker::processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev) {
   auto head = DataHead{DataType::Color, ev.name};
   auto data = tgfx::Data::MakeWithCopy(&ev.value, sizeof(uint32_t));
-  ProcessAttributeImpl(head, std::move(data));
+  processAttributeImpl(head, std::move(data));
 }
 
-void Worker::ProcessFrameMark(const tgfx::debug::FrameMarkMsg& ev) {
+void Worker::processFrameMark(const tgfx::debug::FrameMarkMsg& ev) {
   auto& fd = dataContext.frameData;
 
-  const auto time = TscTime(ev.nsTime);
+  const auto time = tscTime(ev.nsTime);
   fd.frames.push_back(FrameEvent{time, -1, 0, 0, -1});
   if (dataContext.lastTime < time) {
     dataContext.lastTime = time;
   }
 }
 
-void Worker::HandleValueName(uint64_t name, const char* str, size_t sz) {
+void Worker::handleValueName(uint64_t name, const char* str, size_t sz) {
   auto& nameMap = dataContext.nameMap;
   if (nameMap.find(name) == nameMap.end()) {
     nameMap[name] = std::string(str, sz);

@@ -27,8 +27,7 @@
 
 namespace inspector {
 FramesDrawer::FramesDrawer(QQuickItem* parent)
-    : QQuickItem(parent), frameTarget(1000 * 1000 * 1000 / 60),
-      appHost(AppHost::GetAppHost()) {
+    : QQuickItem(parent), frameTarget(1000 * 1000 * 1000 / 60), appHost(AppHost::GetAppHost()) {
   setFlag(ItemHasContents, true);
   setFlag(ItemAcceptsInputMethod, true);
   setFlag(ItemIsFocusScope, true);
@@ -60,7 +59,7 @@ void FramesDrawer::draw() {
   auto canvas = surface->getCanvas();
   canvas->clear();
   canvas->setMatrix(tgfx::Matrix::MakeScale(appHost->density(), appHost->density()));
-  drawRect(canvas, 0, 0, static_cast<float>(width()), static_cast<float>(height()), 0xFF2E2E2E);
+  DrawRect(canvas, 0, 0, static_cast<float>(width()), static_cast<float>(height()), 0xFF2E2E2E);
   drawFrames(canvas);
   context->flushAndSubmit();
   tgfxWindow->present(context);
@@ -82,16 +81,16 @@ void FramesDrawer::drawSelect(tgfx::Canvas* canvas, std::pair<uint32_t, uint32_t
     auto fx0 = static_cast<float>(x0);
     auto h = static_cast<float>(height());
     if (x1 - x0 >= 3) {
-      drawRect(canvas, 2.f + fx0, 0, fx1 - fx0, h, transparentColor);
+      DrawRect(canvas, 2.f + fx0, 0, fx1 - fx0, h, transparentColor);
       auto p1 = tgfx::Point{2.f + fx0, -1.f};
       auto p2 = tgfx::Point{2.f + fx0, h - 1.f};
       auto p3 = tgfx::Point{fx1, -1.f};
       auto p4 = tgfx::Point{fx1, h - 1.f};
 
-      drawLine(canvas, p1, p2, color);
-      drawLine(canvas, p3, p4, color);
+      DrawLine(canvas, p1, p2, color);
+      DrawLine(canvas, p3, p4, color);
     } else {
-      drawRect(canvas, 2.f + fx0, 0, fx1 - fx0, h, transparentColor);
+      DrawRect(canvas, 2.f + fx0, 0, fx1 - fx0, h, transparentColor);
     }
   }
 }
@@ -126,11 +125,11 @@ void FramesDrawer::drawFrames(tgfx::Canvas* canvas) {
       auto p1 = tgfx::Point{2.f + i * frameWidth, (float)height() - 1.f - frameHeight};
       auto p2 =
           tgfx::Point{(float)frameWidth + i * frameWidth - p1.x, (float)height() - 1.f - p1.y};
-      drawRect(canvas, p1, p2, color);
+      DrawRect(canvas, p1, p2, color);
     } else {
       auto p1 = tgfx::Point{1.f + i, (float)height() - 2 - frameHeight};
       auto p2 = tgfx::Point{1.f + i, (float)height() - 2};
-      drawLine(canvas, p1, p2, color);
+      DrawLine(canvas, p1, p2, color);
     }
     i++;
     idx += 1;
@@ -174,33 +173,33 @@ void FramesDrawer::drawBackground(tgfx::Canvas* canvas) {
   auto p1 = tgfx::Point{w - placeWidth, 0};
   auto p2 = tgfx::Point{placeWidth, h};
   auto textXStart = p1.x + p2.x / 2;
-  drawRect(canvas, p1, p2, 0x66BB7DC8);
+  DrawRect(canvas, p1, p2, 0x66BB7DC8);
 
   p1 = dpos + tgfx::Point{0, round(h - h * frameTarget * 2 / MaxFrameTime)};
   p2 = dpos + tgfx::Point{w, round(h - h * frameTarget * 2 / MaxFrameTime)};
-  drawLine(canvas, p1, p2, 0x442222DD);
+  DrawLine(canvas, p1, p2, 0x442222DD);
   auto textFps = "30FPS";
-  auto textBounds = getTextSize(appHost.get(), textFps, 0, fontSize);
+  auto textBounds = GetTextSize(appHost.get(), textFps, 0, fontSize);
   auto textPoint = tgfx::Point{textXStart - textBounds.width() / 2, p2.y + textBounds.height() / 2};
-  drawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF2222DD,
+  DrawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF2222DD,
                         fontSize);
 
   p1 = dpos + tgfx::Point{0, round(h - h * frameTarget / MaxFrameTime)};
   p2 = dpos + tgfx::Point{w, round(h - h * frameTarget / MaxFrameTime)};
-  drawLine(canvas, p1, p2, 0x4422DDDD);
+  DrawLine(canvas, p1, p2, 0x4422DDDD);
   textFps = "60FPS";
-  textBounds = getTextSize(appHost.get(), textFps, 0, fontSize);
+  textBounds = GetTextSize(appHost.get(), textFps, 0, fontSize);
   textPoint = tgfx::Point{textXStart - textBounds.width() / 2, p2.y + textBounds.height() / 2};
-  drawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF22DDDD,
+  DrawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF22DDDD,
                         fontSize);
 
   p1 = dpos + tgfx::Point{0, round(h - h * frameTarget / 2 / MaxFrameTime)};
   p2 = dpos + tgfx::Point{w, round(h - h * frameTarget / 2 / MaxFrameTime)};
-  drawLine(canvas, p1, p2, 0x4422DD22);
+  DrawLine(canvas, p1, p2, 0x4422DD22);
   textFps = "120FPS";
-  textBounds = getTextSize(appHost.get(), textFps, 0, fontSize);
+  textBounds = GetTextSize(appHost.get(), textFps, 0, fontSize);
   textPoint = tgfx::Point{textXStart - textBounds.width() / 2, p2.y + textBounds.height() / 2};
-  drawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF22DD22,
+  DrawTextWithBlackRect(canvas, appHost.get(), textFps, textPoint.x, textPoint.y, 0xFF22DD22,
                         fontSize);
 }
 

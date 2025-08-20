@@ -28,8 +28,8 @@
 #include <QTimer>
 #include "InspectorView.h"
 #include "ResolvService.h"
-#include "layerInspector/LayerProfilerView.h"
 #include "Socket.h"
+#include "layerInspector/LayerProfilerView.h"
 
 namespace inspector {
 

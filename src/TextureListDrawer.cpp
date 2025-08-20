@@ -1,22 +1,41 @@
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Tencent is pleased to support the open source community by making tgfx available.
+//
+//  Copyright (C) 2025 Tencent. All rights reserved.
+//
+//  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
+//  in compliance with the License. You may obtain a copy of the License at
+//
+//      https://opensource.org/licenses/BSD-3-Clause
+//
+//  unless required by applicable law or agreed to in writing, software distributed under the
+//  license is distributed on an "as is" basis, without warranties or conditions of any kind,
+//  either express or implied. see the license for the specific language governing permissions
+//  and limitations under the license.
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
 #include "TextureListDrawer.h"
 #include <qdir.h>
 #include <QRandomGenerator>
 #include <QSGImageNode>
 #include <iostream>
 #include "Draw.h"
+
 namespace inspector {
-static tgfx::Rect calcInerRect(const tgfx::Rect& rect, float aspectRatio) {
+static tgfx::Rect CalcInerRect(const tgfx::Rect& rect, float aspectRatio) {
   auto w = rect.width();
   auto h = rect.height();
   const auto paddingRatio = 0.05f;
   const auto innerScaleRatio = 1 - 2 * paddingRatio;
-  if (w <= h * aspectRatio) {  //外部矩形更扁
+  if (w <= h * aspectRatio) {
     auto innerWidth = w * innerScaleRatio;
     auto innerHeight = innerWidth / aspectRatio;
     auto x = paddingRatio * w;
     auto y = (h - innerHeight) / 2;
     return tgfx::Rect::MakeXYWH(x + rect.x(), y + rect.y(), innerWidth, innerHeight);
-  } else {  //外部矩形更瘦
+  } else {
     auto innerHeight = h * innerScaleRatio;
     auto innerWidth = innerHeight * aspectRatio;
     auto x = (w - innerWidth) / 2;
@@ -112,12 +131,12 @@ void TextureListDrawer::draw() {
   canvas->setMatrix(tgfx::Matrix::MakeScale(appHost->density(), appHost->density()));
   canvas->translate(0, -static_cast<float>(scrollOffset * width()) / 200.f);
   for (size_t i = 0; i < squareRects.size(); ++i) {
-    drawRect(canvas, squareRects[i], 0xFF535353);
+    DrawRect(canvas, squareRects[i], 0xFF535353);
     if (!images[i]) {
       return;
     }
     auto imageRect =
-        calcInerRect(squareRects[i], images[i]->width() / static_cast<float>(images[i]->height()));
+        CalcInerRect(squareRects[i], images[i]->width() / static_cast<float>(images[i]->height()));
     canvas->drawImageRect(
         images[i], imageRect,
         tgfx::SamplingOptions(tgfx::FilterMode::Linear, tgfx::MipmapMode::Linear));

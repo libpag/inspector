@@ -27,26 +27,26 @@ const auto FontSize = 15.f;
 const auto MaxHeight = 28;
 const auto zoneMargin = 1.f;
 
-tgfx::Color getTgfxColor(uint32_t color);
+tgfx::Color GetTgfxColor(uint32_t color);
 
-tgfx::Rect getTextSize(const AppHost* appHost, const char* text, size_t textSize = 0,
+tgfx::Rect GetTextSize(const AppHost* appHost, const char* text, size_t textSize = 0,
                        float fontSize = FontSize);
-void drawPath(tgfx::Canvas* canvas, tgfx::Path& path, uint32_t color, float thickness = 0.f);
-void drawRect(tgfx::Canvas* canvas, float x0, float y0, float w, float h, uint32_t color,
+void DrawPath(tgfx::Canvas* canvas, tgfx::Path& path, uint32_t color, float thickness = 0.f);
+void DrawRect(tgfx::Canvas* canvas, float x0, float y0, float w, float h, uint32_t color,
               float thickness = 0.f);
-void drawRect(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color,
+void DrawRect(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color,
               float thickness = 0.f);
-void drawRect(tgfx::Canvas* canvas, tgfx::Rect& rect, uint32_t color, float thickness = 0.f);
-void drawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color);
-void drawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, tgfx::Point& p3,
+void DrawRect(tgfx::Canvas* canvas, tgfx::Rect& rect, uint32_t color, float thickness = 0.f);
+void DrawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, uint32_t color);
+void DrawLine(tgfx::Canvas* canvas, tgfx::Point& p1, tgfx::Point& p2, tgfx::Point& p3,
               uint32_t color, float thickness = 1.f);
-void drawLine(tgfx::Canvas* canvas, float x0, float y0, float x1, float y1, uint32_t color);
-void drawText(tgfx::Canvas* canvas, const AppHost* appHost, const std::string& text, float x,
+void DrawLine(tgfx::Canvas* canvas, float x0, float y0, float x1, float y1, uint32_t color);
+void DrawText(tgfx::Canvas* canvas, const AppHost* appHost, const std::string& text, float x,
               float y, uint32_t color, float fontSize = FontSize);
-void drawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, float x, float y,
+void DrawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, float x, float y,
                       uint32_t color, const char* text, float fontSize = FontSize);
-void drawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, tgfx::Point pos, uint32_t color,
+void DrawTextContrast(tgfx::Canvas* canvas, const AppHost* appHost, tgfx::Point pos, uint32_t color,
                       const char* text, float fontSize = FontSize);
-void drawTextWithBlackRect(tgfx::Canvas* canvas, const AppHost* appHost, const char* text, float x,
+void DrawTextWithBlackRect(tgfx::Canvas* canvas, const AppHost* appHost, const char* text, float x,
                            float y, uint32_t color, float fontSize = FontSize);
 }  // namespace inspector

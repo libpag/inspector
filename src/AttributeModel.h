@@ -30,9 +30,11 @@ class SummaryItem : public QObject {
   SummaryItem(QString name, QVariant value, QObject* parent = nullptr)
       : QObject(parent), name(std::move(name)), value(std::move(value)) {
   }
+
   QString getName() const {
     return name;
   }
+
   QVariant getValue() const {
     return value;
   }
@@ -50,9 +52,11 @@ class ProcessItem : public QObject {
   ProcessItem(QString name, int level, QObject* parent = nullptr)
       : QObject(parent), level(level), name(std::move(name)) {
   }
+
   int getLevel() const {
     return level;
   }
+
   QString getName() const {
     return name;
   }

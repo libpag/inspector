@@ -16,9 +16,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <QApplication>
 #include <kddockwidgets/Config.h>
 #include <qwidget.h>
+#include <QApplication>
 #include <QQuickStyle>
 #include "StartView.h"
 

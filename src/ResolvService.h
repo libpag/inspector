@@ -38,10 +38,10 @@ class ResolvService {
   ResolvService(uint16_t port);
   ~ResolvService();
 
-  void Query(uint32_t ip, const std::function<void(std::string&&)>& callback);
+  void query(uint32_t ip, const std::function<void(std::string&&)>& callback);
 
  private:
-  void Worker();
+  void worker();
 
   std::atomic<bool> exit;
   std::mutex mutex;

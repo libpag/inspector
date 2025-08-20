@@ -27,7 +27,7 @@
 
 namespace inspector {
 ResolvService::ResolvService(uint16_t port)
-    : exit(false), port(port), thread([this] { Worker(); }) {
+    : exit(false), port(port), thread([this] { worker(); }) {
 }
 
 ResolvService::~ResolvService() {
@@ -36,24 +36,26 @@ ResolvService::~ResolvService() {
   thread.join();
 }
 
-void ResolvService::Query(uint32_t ip, const std::function<void(std::string&&)>& callback) {
+void ResolvService::query(uint32_t ip, const std::function<void(std::string&&)>& callback) {
   std::lock_guard<std::mutex> lock(mutex);
   queue.emplace_back(QueueItem{ip, callback});
   conditionVariable.notify_one();
 }
 
-void ResolvService::Worker() {
+void ResolvService::worker() {
   struct sockaddr_in addr = {};
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
 
-  char buf[128];
+  char buf[128] = {};
 
   for (;;) {
     std::unique_lock<std::mutex> lock(mutex);
     conditionVariable.wait(
         lock, [this] { return !queue.empty() || exit.load(std::memory_order_relaxed); });
-    if (exit.load(std::memory_order_relaxed)) return;
+    if (exit.load(std::memory_order_relaxed)) {
+      return;
+    }
     auto query = queue.back();
     queue.pop_back();
     lock.unlock();

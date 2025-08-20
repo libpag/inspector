@@ -1,6 +1,22 @@
-#ifndef TEXTURELISTDRAWER_H
-#define TEXTURELISTDRAWER_H
+/////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//  Tencent is pleased to support the open source community by making tgfx available.
+//
+//  Copyright (C) 2025 Tencent. All rights reserved.
+//
+//  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
+//  in compliance with the License. You may obtain a copy of the License at
+//
+//      https://opensource.org/licenses/BSD-3-Clause
+//
+//  unless required by applicable law or agreed to in writing, software distributed under the
+//  license is distributed on an "as is" basis, without warranties or conditions of any kind,
+//  either express or implied. see the license for the specific language governing permissions
+//  and limitations under the license.
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
 #include <QStringList>
 #include <QVector>
 #include <memory>
@@ -12,32 +28,37 @@ class TextureListDrawer : public QQuickItem {
   Q_PROPERTY(QString imageLabel WRITE setImageLabel)
  public:
   explicit TextureListDrawer(QQuickItem* parent = nullptr);
-  ~TextureListDrawer() = default;
+
+  ~TextureListDrawer() override = default;
 
   Q_SIGNAL void selectedImage(std::shared_ptr<tgfx::Image> image);
 
   void updateImageData(std::initializer_list<std::string>& testImageSources);
+
   void setImageLabel(const QString& label);
 
  protected:
   QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*) override;
+
   void mousePressEvent(QMouseEvent* event) override;
+
   void wheelEvent(QWheelEvent* event) override;
+
   void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
 
- private:
   void updateLayout();
+
   void draw();
+
   int itemAtPosition(float y) const;
 
+ private:
   std::vector<tgfx::Rect> squareRects;
   std::vector<std::shared_ptr<tgfx::Image>> images;
   bool layoutDirty = true;
-  float scrollOffset;
+  float scrollOffset = 0.0f;
 
   std::shared_ptr<tgfx::QGLWindow> tgfxWindow = nullptr;
   std::shared_ptr<AppHost> appHost = nullptr;
 };
 }  // namespace inspector
-
-#endif  // TEXTURELISTDRAWER_H

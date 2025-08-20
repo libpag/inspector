@@ -23,8 +23,8 @@
 #include <thread>
 #include "DataContext.h"
 #include "DecodeStream.h"
-#include "Protocol.h"
 #include "Message.h"
+#include "Protocol.h"
 #include "Socket.h"
 
 namespace inspector {
@@ -35,9 +35,9 @@ class Worker : public QObject {
     int size;
   };
 
+  explicit Worker(std::string& filePath);
   Worker(const char* addr, uint16_t port);
-  Worker(std::string& filePath);
-  ~Worker();
+  ~Worker() override;
 
   bool openFile(const std::string& filePath);
   bool saveFile(const std::string& filePath);
@@ -54,7 +54,7 @@ class Worker : public QObject {
   FrameData* getFrameData();
   const DataContext& getDataContext() const;
 
- private:
+ protected:
   DecodeStream readBodyBytes(DecodeStream* stream);
 
   void shutdown();
@@ -62,33 +62,30 @@ class Worker : public QObject {
   void netWork();
 
   void newOpTask(std::shared_ptr<OpTaskData> opTask);
-  void Query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra = 0);
-  void QueryTerminate();
-  bool DispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr);
-  bool Process(const tgfx::debug::MsgItem& ev);
-  void ProcessOperateBegin(const tgfx::debug::OperateBeginMsg& ev);
-  void ProcessOperateEnd(const tgfx::debug::OperateEndMsg& ev);
-  void ProcessAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> data);
-  void ProcessFloatValue(const tgfx::debug::AttributeDataFloatMsg& ev);
-  void ProcessFloat4Value(const tgfx::debug::AttributeDataFloat4Msg& ev);
-  void ProcessIntValue(const tgfx::debug::AttributeDataIntMsg& ev);
-  void ProcessBoolValue(const tgfx::debug::AttributeDataBoolMsg& ev);
-  void ProcessMat4Value(const tgfx::debug::AttributeDataMat4Msg& ev);
-  void ProcessEnumValue(const tgfx::debug::AttributeDataEnumMsg& ev);
-  void ProcessUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev);
-  void ProcessColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev);
-  void ProcessFrameMark(const tgfx::debug::FrameMarkMsg& ev);
+  void query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra = 0);
+  void queryTerminate();
+  bool dispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr);
+  bool process(const tgfx::debug::MsgItem& ev);
+  void processOperateBegin(const tgfx::debug::OperateBeginMsg& ev);
+  void processOperateEnd(const tgfx::debug::OperateEndMsg& ev);
+  void processAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> data);
+  void processFloatValue(const tgfx::debug::AttributeDataFloatMsg& ev);
+  void processFloat4Value(const tgfx::debug::AttributeDataFloat4Msg& ev);
+  void processIntValue(const tgfx::debug::AttributeDataIntMsg& ev);
+  void processBoolValue(const tgfx::debug::AttributeDataBoolMsg& ev);
+  void processMat4Value(const tgfx::debug::AttributeDataMat4Msg& ev);
+  void processEnumValue(const tgfx::debug::AttributeDataEnumMsg& ev);
+  void processUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev);
+  void processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev);
+  void processFrameMark(const tgfx::debug::FrameMarkMsg& ev);
 
-  void HandleValueName(uint64_t name, const char* str, size_t sz);
+  void handleValueName(uint64_t name, const char* str, size_t sz);
 
-  int64_t TscTime(int64_t tsc) const {
+  int64_t tscTime(int64_t tsc) const {
     return int64_t(tsc - dataContext.baseTime);
   }
-  int64_t TscTime(uint64_t tsc) const {
+  int64_t tscTime(uint64_t tsc) const {
     return int64_t(int64_t(tsc) - dataContext.baseTime);
-  }
-  int64_t TscPeriod(uint64_t tsc) const {
-    return int64_t(tsc);
   }
 
  private:
