@@ -30,8 +30,8 @@ namespace inspector {
 
 class ResolvService {
   struct QueueItem {
-    uint32_t ip;
-    std::function<void(std::string&&)> callback;
+    uint32_t ip = 0;
+    std::function<void(std::string&&)> callback = nullptr;
   };
 
  public:
