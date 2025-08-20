@@ -27,10 +27,8 @@
 #include "Socket.h"
 
 namespace inspector {
-ClientData::ClientData(int64_t time, uint32_t protoVer, int32_t activeTime, uint16_t port,
-                       uint64_t pid, std::string procName, std::string address, uint8_t type)
-    : time(time), protocolVersion(protoVer), activeTime(activeTime), port(port), pid(pid),
-      procName(std::move(procName)), address(std::move(address)), type(type) {
+ClientData::ClientData(Data data)
+    : data(std::move(data)) {
 }
 
 StartView::StartView(QObject* parent) : QObject(parent), resolv(port) {
@@ -58,6 +56,7 @@ StartView::~StartView() {
 
 QList<QObject*> StartView::getFileItems() const {
   QList<QObject*> items;
+  items.reserve(fileItems.size());
   for (const auto& fileItem : fileItems) {
     items.append(fileItem);
   }
@@ -111,7 +110,7 @@ void StartView::clearRecentFiles() {
 QVector<QObject*> StartView::getFrameCaptureClientItems() const {
   QVector<QObject*> clientDatas;
   for (auto& client : clients) {
-    if (client.second->type == static_cast<uint8_t>(tgfx::debug::ToolType::FrameCapture)) {
+    if (client.second->data.type == static_cast<uint8_t>(tgfx::debug::ToolType::FrameCapture)) {
       clientDatas.push_back(client.second);
     }
   }
@@ -121,7 +120,7 @@ QVector<QObject*> StartView::getFrameCaptureClientItems() const {
 QVector<QObject*> StartView::getLayerTreeClientItems() const {
   QVector<QObject*> clientDatas;
   for (auto& client : clients) {
-    if (client.second->type == static_cast<uint8_t>(tgfx::debug::ToolType::LayerTree)) {
+    if (client.second->data.type == static_cast<uint8_t>(tgfx::debug::ToolType::LayerTree)) {
       clientDatas.push_back(client.second);
     }
   }
@@ -252,21 +251,21 @@ void StartView::updateBroadcastClients() {
             });
           }
           resolvLock.unlock();
-          auto client = new ClientData{time, protoVer, activeTime,    listenPort,
-                                       pid,  procname, std::move(ip), type};
+          auto client = new ClientData({time, protoVer, activeTime,    listenPort,
+                                       pid,  procname, std::move(ip), type});
           clients.emplace(clientId, client);
           Q_EMIT clientItemsChanged();
         } else {
           auto client = it->second;
-          client->time = time;
-          client->activeTime = activeTime;
-          client->port = listenPort;
-          client->pid = pid;
-          client->protocolVersion = protoVer;
-          if (strcmp(client->procName.c_str(), procname) != 0) {
-            client->procName = procname;
+          client->data.time = time;
+          client->data.activeTime = activeTime;
+          client->data.port = listenPort;
+          client->data.pid = pid;
+          client->data.protocolVersion = protoVer;
+          if (strcmp(client->data.procName.c_str(), procname) != 0) {
+            client->data.procName = procname;
           }
-          client->type = type;
+          client->data.type = type;
         }
       } else if (it != clients.end()) {
         clients.erase(it);
@@ -275,7 +274,7 @@ void StartView::updateBroadcastClients() {
     }
     auto it = clients.begin();
     while (it != clients.end()) {
-      const auto diff = time - it->second->time;
+      const auto diff = time - it->second->data.time;
       if (diff > 4000) {
         it = clients.erase(it);
         Q_EMIT clientItemsChanged();

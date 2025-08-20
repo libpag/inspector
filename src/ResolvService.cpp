@@ -27,7 +27,7 @@
 
 namespace inspector {
 ResolvService::ResolvService(uint16_t port)
-    : exit(false), port(port), thread([this] { worker(); })
+    : port(port), thread([this] { worker(); })
 {
 }
 

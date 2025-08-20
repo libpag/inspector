@@ -39,24 +39,39 @@ class ClientData : public QObject {
   Q_PROPERTY(QString address READ getAddress CONSTANT)
   Q_PROPERTY(uint8_t type READ getType CONSTANT)
  public:
-  ClientData(int64_t time, uint32_t protoVer, int32_t activeTime, uint16_t port, uint64_t pid,
-             std::string procName, std::string address, uint8_t type);
+  struct Data {
+    int64_t time = 0;
+    uint32_t protocolVersion = 0;
+    int32_t activeTime = 0;
+    uint16_t port = 0;
+    uint64_t pid = 0;
+    std::string procName = {};
+    std::string address = {};
+    uint8_t type = 0;
+  };
+
+  explicit ClientData(Data data);
 
   QString getProcName() const {
-    return QString::fromStdString(procName);
+    return QString::fromStdString(data.procName);
   }
+
   QString getAddress() const {
-    return QString::fromStdString(address);
+    return QString::fromStdString(data.address);
   }
+
   uint16_t getPort() const {
-    return port;
+    return data.port;
   }
+
   bool getConnected() const {
     return connected;
   }
+
   uint8_t getType() const {
-    return type;
+    return data.type;
   }
+
   void setConnected(bool isConnect) {
     connected = isConnect;
     Q_EMIT connectStateChange();
@@ -65,14 +80,7 @@ class ClientData : public QObject {
   Q_SIGNAL void connectStateChange();
 
   bool connected = false;
-  int64_t time = 0;
-  uint32_t protocolVersion = 0;
-  int32_t activeTime = 0;
-  uint16_t port = 0;
-  uint64_t pid = 0;
-  std::string procName;
-  std::string address;
-  uint8_t type;
+  Data data = {};
 };
 
 class FileItem : public QObject {

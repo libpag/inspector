@@ -12,7 +12,7 @@
           "-DKDDockWidgets_QT6=ON",
           "-DKDDockWidgets_STATIC=ON",
           "-DKDDW_FRONTEND_QTQUICK=ON",
-          "-DCMAKE_PREFIX_PATH=\"/Users/lifengdy/Qt/6.8.1/macos/lib/cmake\""
+          "-DCMAKE_PREFIX_PATH=\"/Users/[username]/Qt/[QtVersion]/macos/lib/cmake\""
         ]
       }
     },

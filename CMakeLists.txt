@@ -36,32 +36,10 @@ add_subdirectory(${TGFX_DIR} tgfx EXCLUDE_FROM_ALL)
 list(APPEND PAG_STATIC_LIBS $<TARGET_FILE:tgfx>)
 list(APPEND PAG_DEPEND_TARGETS tgfx)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
-if (${QT_VERSION_MAJOR} LESS 6)
-    message("The QT version is less than 6.0, force to use x86_64 architecture.")
-    SET(CMAKE_SYSTEM_PROCESSOR x86_64)
-    SET(CMAKE_OSX_ARCHITECTURES x86_64)
-endif ()
-
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets OpenGL qml Quick WebSockets Network QuickControls2 Core5Compat)
-list(APPEND TGFX_INSPECTOR_LIBS Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets
-        Qt${QT_VERSION_MAJOR}::WebSockets Qt${QT_VERSION_MAJOR}::OpenGL Qt${QT_VERSION_MAJOR}::Qml Qt${QT_VERSION_MAJOR}::Quick
-        Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::QuickControls2 Qt${QT_VERSION_MAJOR}::Core5Compat)
-if (${QT_VERSION} VERSION_LESS "5.15")
-    function(qt_add_resources outfiles)
-        qt5_add_resources("${outfiles}" ${ARGN})
-        if (TARGET ${outfiles})
-            cmake_parse_arguments(PARSE_ARGV 1 arg "" "OUTPUT_TARGETS" "")
-            if (arg_OUTPUT_TARGETS)
-                set(${arg_OUTPUT_TARGETS} ${${arg_OUTPUT_TARGETS}} PARENT_SCOPE)
-            endif ()
-        else ()
-            set("${outfiles}" "${${outfiles}}" PARENT_SCOPE)
-        endif ()
-    endfunction()
-endif ()
-
-qt_add_resources(QT_RESOURCES res.qrc)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL qml Quick WebSockets Network QuickControls2 Core5Compat)
+list(APPEND TGFX_INSPECTOR_LIBS Qt6::Core Qt6::Widgets Qt6::WebSockets Qt6::OpenGL Qt6::Qml Qt6::Quick Qt6::Network
+        Qt6::QuickControls2 Qt6::Core5Compat)
+qt6_add_resources(QT_RESOURCES res.qrc)
 
 if (APPLE)
     find_library(APPLICATION_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
