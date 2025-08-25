@@ -23,16 +23,18 @@
 #include <thread>
 #include "DataContext.h"
 #include "DecodeStream.h"
+#include "LZ4CompressionHandler.h"
 #include "Message.h"
 #include "Protocol.h"
 #include "Socket.h"
 
 namespace inspector {
+static constexpr size_t MaxDecodeBufferSize = 10 * 1024 * 1024;
 class Worker : public QObject {
  public:
   struct NetBuffer {
     int bufferOffset;
-    int size;
+    size_t size;
   };
 
   explicit Worker(std::string& filePath);
@@ -78,8 +80,11 @@ class Worker : public QObject {
   void processUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev);
   void processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev);
   void processFrameMark(const tgfx::debug::FrameMarkMsg& ev);
+  void processTextureData(const tgfx::debug::TextureDataMsg& ev);
+  void processTexture(const tgfx::debug::TextureSamplerMsg& ev);
 
   void handleValueName(uint64_t name, const char* str, size_t sz);
+  void addTextureData(const char* data, size_t sz);
 
   int64_t tscTime(int64_t tsc) const {
     return int64_t(tsc - dataContext.baseTime);
@@ -89,15 +94,16 @@ class Worker : public QObject {
   }
 
  private:
-  tgfx::debug::Socket sock;
-  std::string addr;
-  uint16_t port;
+  tgfx::debug::Socket sock = {};
+  std::string addr = {};
+  uint16_t port = 0;
 
-  void* lz4Stream;
-  char* dataBuffer;
-  int bufferOffset;
+  std::unique_ptr<tgfx::debug::LZ4CompressionHandler> lz4Handler = nullptr;
+  // void* lz4Stream;
+  char* dataBuffer = nullptr;
+  int bufferOffset = 0;
 
-  DataContext dataContext;
+  DataContext dataContext = {};
 
   std::thread workThread;
   std::thread netThread;
@@ -125,6 +131,7 @@ class Worker : public QObject {
   size_t serverQuerySpaceBase = 0;
 
   int64_t refTime = 0;
+  std::shared_ptr<tgfx::Data> penddingTextureData = nullptr;
 };
 
 }  // namespace inspector

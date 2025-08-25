@@ -21,23 +21,45 @@
 #include <QVector>
 #include <memory>
 #include "AppHost.h"
+#include "ViewData.h"
+#include "Worker.h"
 #include "tgfx/gpu/opengl/qt/QGLWindow.h"
 namespace inspector {
 class TextureListDrawer : public QQuickItem {
   Q_OBJECT
-  Q_PROPERTY(QString imageLabel WRITE setImageLabel)
+  Q_PROPERTY(int imageLabel WRITE setImageLabel)
+  Q_PROPERTY(Worker* worker READ getWorker WRITE setWorker)
+  Q_PROPERTY(ViewData* viewData READ getViewData WRITE setViewData)
  public:
   explicit TextureListDrawer(QQuickItem* parent = nullptr);
 
   ~TextureListDrawer() override = default;
 
+  Worker* getWorker() const {
+    return worker;
+  }
+
+  void setWorker(Worker* worker) {
+    this->worker = worker;
+  }
+
+  ViewData* getViewData() const {
+    return viewData;
+  }
+
+  void setViewData(ViewData* viewData) {
+    this->viewData = viewData;
+  }
+
   Q_SIGNAL void selectedImage(std::shared_ptr<tgfx::Image> image);
 
-  void updateImageData(std::initializer_list<std::string>& testImageSources);
-
-  void setImageLabel(const QString& label);
+  void setImageLabel(int label);
 
  protected:
+  enum class LableType {
+    Input,
+    Output,
+  };
   QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*) override;
 
   void mousePressEvent(QMouseEvent* event) override;
@@ -48,16 +70,23 @@ class TextureListDrawer : public QQuickItem {
 
   void updateLayout();
 
+  void updateImageData();
+
+  void addImage(uint64_t texturePtr);
+
   void draw();
 
   int itemAtPosition(float y) const;
 
  private:
+  Worker* worker = nullptr;
+  ViewData* viewData = nullptr;
+  int selectOpTask = -1;
   std::vector<tgfx::Rect> squareRects;
   std::vector<std::shared_ptr<tgfx::Image>> images;
   bool layoutDirty = true;
   float scrollOffset = 0.0f;
-
+  LableType lableType = LableType::Input;
   std::shared_ptr<tgfx::QGLWindow> tgfxWindow = nullptr;
   std::shared_ptr<AppHost> appHost = nullptr;
 };

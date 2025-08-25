@@ -56,9 +56,9 @@ class LayerProfilerView : public QObject {
 
  protected:
   void LayerProlfilerQMLImpl();
+
   void ProcessMessage(const QByteArray& message);
 
- private:
   QByteArray feedBackData(tgfx::debug::LayerInspectorMsgType type, uint64_t value);
 
   void sendSelectedAddress(uint64_t address);

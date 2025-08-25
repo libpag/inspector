@@ -27,27 +27,42 @@
 #include "TagHeader.h"
 #include "lz4.h"
 #include "tgfx/core/Data.h"
+#include "tgfx/core/ImageCodec.h"
 
 namespace inspector {
 static constexpr size_t ServerQueryPacketSize = sizeof(tgfx::debug::ServerQueryPacket);
 
+tgfx::ColorType PixelFormatToColorType(tgfx::PixelFormat format) {
+  switch (format) {
+    case tgfx::PixelFormat::RGBA_8888:
+      return tgfx::ColorType::RGBA_8888;
+    case tgfx::PixelFormat::ALPHA_8:
+      return tgfx::ColorType::ALPHA_8;
+    case tgfx::PixelFormat::BGRA_8888:
+      return tgfx::ColorType::BGRA_8888;
+    case tgfx::PixelFormat::GRAY_8:
+      return tgfx::ColorType::Gray_8;
+    default:
+      return tgfx::ColorType::Unknown;
+  }
+}
+
 static bool IsQueryPrio(tgfx::debug::ServerQuery type) {
-  return type < tgfx::debug::ServerQuery::ServerQueryDisconnect;
+  return type < tgfx::debug::ServerQuery::Disconnect;
 }
 
 Worker::Worker(const char* addr, uint16_t port)
-    : addr(addr), port(port), lz4Stream(LZ4_createStreamDecode()),
-      dataBuffer(new char[tgfx::debug::TargetFrameSize * 3 + 1]), bufferOffset(0) {
+    : addr(addr), port(port), lz4Handler(tgfx::debug::LZ4CompressionHandler::Make()),
+      dataBuffer(new char[MaxDecodeBufferSize]) {
   workThread = std::thread([this] { exec(); });
   netThread = std::thread([this] { netWork(); });
 }
 
-Worker::Worker(std::string& filePath)
-    : port(0), lz4Stream(nullptr), dataBuffer(nullptr), bufferOffset(0) {
+Worker::Worker(std::string& filePath) {
   openFile(filePath);
 }
 
-Worker::~Worker() override {
+Worker::~Worker() {
   shutdown();
   if (netThread.joinable()) {
     netThread.join();
@@ -57,9 +72,6 @@ Worker::~Worker() override {
   }
   if (dataBuffer) {
     delete[] dataBuffer;
-  }
-  if (lz4Stream) {
-    LZ4_freeStreamDecode((LZ4_streamDecode_t*)lz4Stream);
   }
 }
 
@@ -216,7 +228,7 @@ void Worker::exec() {
   }
 
   {
-    tgfx::debug::WelcomeMessage welcome;
+    tgfx::debug::WelcomeMessage welcome{};
     if (!sock.readData(&welcome, sizeof(welcome), 10, ShouldExit)) {
       this->handshake.store(static_cast<uint8_t>(tgfx::debug::HandshakeStatus::HandshakeDropped),
                             std::memory_order_relaxed);
@@ -234,7 +246,6 @@ void Worker::exec() {
       std::min(sock.getSendBufferSize() / static_cast<int>(ServerQueryPacketSize), 8 * 1024) - 4);
   hasData.store(true, std::memory_order_release);
 
-  LZ4_setStreamDecode((LZ4_streamDecode_t*)lz4Stream, nullptr, 0);
   isConnected.store(true, std::memory_order_relaxed);
   {
     std::lock_guard<std::mutex> lock(netWriteLock);
@@ -304,6 +315,12 @@ void Worker::exec() {
   }
 }
 
+static bool IsJPEG(const uint8_t* data, size_t size) {
+  auto offset = sizeof(tgfx::debug::MsgHeader) + sizeof(tgfx::debug::StringTransferMsg) + sizeof(uint32_t);
+  const auto pixelsData = data + offset;
+  return (size >= 3 + offset && pixelsData[0] == 0xFF && pixelsData[1] == 0xD8 && pixelsData[2] == 0xFF);
+}
+
 #define CLOSE_NETWORK                            \
   std::lock_guard<std::mutex> lock(netReadLock); \
   netRead.push_back(NetBuffer{-1, 0});           \
@@ -313,7 +330,7 @@ void Worker::exec() {
 void Worker::netWork() {
   auto ShouldExit = [this] { return isShutDown.load(std::memory_order_relaxed); };
 
-  auto lz4buf = std::unique_ptr<char[]>(new char[tgfx::debug::LZ4Size]);
+  tgfx::Buffer lz4Buffer = {};
   while (true) {
     {
       std::unique_lock<std::mutex> lock(netWriteLock);
@@ -326,29 +343,40 @@ void Worker::netWork() {
     }
 
     auto buf = dataBuffer + bufferOffset;
-    tgfx::debug::lz4sz_t lz4sz;
-    if (!sock.readData(&lz4sz, sizeof(lz4sz), 10, ShouldExit)) {
+    size_t lz4Size = 0;
+    if (!sock.readData(&lz4Size, sizeof(lz4Size), 10, ShouldExit)) {
       CLOSE_NETWORK;
     }
-    if (!sock.readData(lz4buf.get(), static_cast<size_t>(lz4sz), 10, ShouldExit)) {
+    if (lz4Buffer.size() < lz4Size) {
+      lz4Buffer.alloc(lz4Size);
+      if (lz4Buffer.isEmpty()) {
+        CLOSE_NETWORK;
+      }
+    }
+    if (!sock.readData(lz4Buffer.bytes(), lz4Size, 10, ShouldExit)) {
       CLOSE_NETWORK;
     }
     auto bb = bytes.load(std::memory_order_relaxed);
-    bytes.store(bb + sizeof(lz4sz) + static_cast<size_t>(lz4sz), std::memory_order_relaxed);
-
-    auto sz = LZ4_decompress_safe_continue((LZ4_streamDecode_t*)lz4Stream, lz4buf.get(), buf, lz4sz,
-                                           tgfx::debug::TargetFrameSize);
-    assert(sz >= 0);
+    bytes.store(bb + sizeof(lz4Size) + lz4Size, std::memory_order_relaxed);
+    auto size = lz4Size;
+    if (IsJPEG(lz4Buffer.bytes(), lz4Size)) {
+      memcpy(buf, lz4Buffer.bytes(), lz4Size);
+    }
+    else {
+      size = lz4Handler->decode(reinterpret_cast<uint8_t*>(buf), MaxDecodeBufferSize, lz4Buffer.bytes(), lz4Size);
+    }
+    LOGI("rev data %ld, decode data %ld", lz4Size, size);
+    assert(size >= 0);
     bb = decBytes.load(std::memory_order_relaxed);
-    decBytes.store(bb + static_cast<uint64_t>(sz), std::memory_order_relaxed);
+    decBytes.store(bb + static_cast<uint64_t>(size), std::memory_order_relaxed);
 
     {
       std::lock_guard<std::mutex> lock(netReadLock);
-      netRead.push_back(NetBuffer{bufferOffset, sz});
+      netRead.push_back(NetBuffer{bufferOffset, size});
       netReadCv.notify_one();
     }
 
-    bufferOffset += sz;
+    bufferOffset += size;
     if (bufferOffset > tgfx::debug::TargetFrameSize * 2) {
       bufferOffset = 0;
     }
@@ -386,31 +414,39 @@ void Worker::query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra)
 }
 
 void Worker::queryTerminate() {
-  tgfx::debug::ServerQueryPacket query{tgfx::debug::ServerQuery::ServerQueryTerminate, 0, 0};
+  tgfx::debug::ServerQueryPacket query{tgfx::debug::ServerQuery::Terminate, 0, 0};
   sock.sendData(&query, ServerQueryPacketSize);
 }
 
 bool Worker::dispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr) {
   if (ev.hdr.idx >= static_cast<uint8_t>(tgfx::debug::MsgType::StringData)) {
     ptr += sizeof(tgfx::debug::MsgHeader) + sizeof(tgfx::debug::StringTransferMsg);
-    uint16_t sz;
-    memcpy(&sz, ptr, sizeof(sz));
-    ptr += sizeof(sz);
-    switch (ev.hdr.type) {
-      case tgfx::debug::MsgType::StringData: {
-        serverQuerySpaceLeft++;
-        break;
+    if (ev.hdr.type == tgfx::debug::MsgType::PixelsData) {
+      uint32_t sz = 0;
+      memcpy(&sz, ptr, sizeof(sz));
+      ptr += sizeof(sz);
+      addTextureData(ptr, sz);
+      ptr += sz;
+    } else {
+      uint16_t sz = 0;
+      memcpy(&sz, ptr, sizeof(sz));
+      ptr += sizeof(sz);
+      switch (ev.hdr.type) {
+        case tgfx::debug::MsgType::StringData: {
+          serverQuerySpaceLeft++;
+          break;
+        }
+        case tgfx::debug::MsgType::ValueName: {
+          handleValueName(ev.stringTransfer.ptr, ptr, sz);
+          serverQuerySpaceLeft++;
+          break;
+        }
+        default: {
+          break;
+        }
       }
-      case tgfx::debug::MsgType::ValueName: {
-        handleValueName(ev.stringTransfer.ptr, ptr, sz);
-        serverQuerySpaceLeft++;
-        break;
-      }
-      default: {
-        break;
-      }
+      ptr += sz;
     }
-    ptr += sz;
     return true;
   }
   ptr += tgfx::debug::MsgDataSize[ev.hdr.idx];
@@ -452,8 +488,13 @@ bool Worker::process(const tgfx::debug::MsgItem& ev) {
     case tgfx::debug::MsgType::FrameMarkMsg:
       processFrameMark(ev.frameMark);
       break;
-    case tgfx::debug::MsgType::KeepAlive:
+    case tgfx::debug::MsgType::TextureData:
+      processTextureData(ev.textureData);
       break;
+    case tgfx::debug::MsgType::Texture:
+      processTexture(ev.textureSampler);
+      break;
+    case tgfx::debug::MsgType::KeepAlive:
     default:
       break;
   }
@@ -468,7 +509,7 @@ int64_t RefTime(int64_t& reference, int64_t delta) {
 
 void Worker::processOperateBegin(const tgfx::debug::OperateBeginMsg& ev) {
   std::shared_ptr<OpTaskData> opTask(new OpTaskData);
-  const auto start = tscTime(RefTime(refTime, ev.nsTime));
+  const auto start = tscTime(RefTime(refTime, ev.usTime));
   opTask->start = start;
   opTask->end = -1;
   opTask->type = ev.type;
@@ -485,7 +526,7 @@ void Worker::processOperateEnd(const tgfx::debug::OperateEndMsg& ev) {
   stack.pop_back();
   assert(opTask->end == -1);
   assert(opTask->type == ev.type);
-  const auto timeEnd = tscTime(RefTime(refTime, ev.nsTime));
+  const auto timeEnd = tscTime(RefTime(refTime, ev.usTime));
   opTask->end = timeEnd;
   assert(timeEnd >= opTask->start);
 }
@@ -505,7 +546,7 @@ void Worker::processAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> da
     propertyData = propertyIter->second;
   }
   if (nameMap.find(head.name) == nameMap.end()) {
-    query(tgfx::debug::ServerQuery::ServerQueryValueName, head.name);
+    query(tgfx::debug::ServerQuery::ValueName, head.name);
   }
   propertyData->summaryName.push_back(head);
   auto& summaryData = propertyData->summaryData;
@@ -564,18 +605,57 @@ void Worker::processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev) {
 void Worker::processFrameMark(const tgfx::debug::FrameMarkMsg& ev) {
   auto& fd = dataContext.frameData;
 
-  const auto time = tscTime(ev.nsTime);
+  const auto time = tscTime(ev.usTime);
   fd.frames.push_back(FrameEvent{time, -1, 0, 0, -1});
   if (dataContext.lastTime < time) {
     dataContext.lastTime = time;
   }
 }
 
-void Worker::handleValueName(uint64_t name, const char* str, size_t sz) {
+void Worker::processTextureData(const tgfx::debug::TextureDataMsg& ev) {
+  auto& images = dataContext.images;
+  auto pixelsIter = images.find(ev.texturePtr);
+  if (pixelsIter != images.end()) {
+    return;
+  }
+  auto image = std::make_shared<ImageTexture>();
+  image->format = ev.format;
+  image->width = ev.width;
+  image->height = ev.height;
+  image->rowBytes = ev.rowBytes;
+  image->data = std::move(penddingTextureData);
+  images[ev.texturePtr] = std::move(image);
+}
+
+void Worker::processTexture(const tgfx::debug::TextureSamplerMsg& ev) {
+  auto& stack = dataContext.opTaskStack;
+  if (stack.empty()) {
+    return;
+  }
+  auto opTask = stack.back();
+  auto& textures = dataContext.textures;
+  auto texture = textures.find(opTask->id);
+  std::shared_ptr<TextureData> textureData;
+  if (texture == textures.end()) {
+    textureData = std::make_shared<TextureData>();
+    textures[opTask->id] = textureData;
+  }
+  else {
+    textureData = texture->second;
+  }
+  textureData->inputTextures.push_back(ev.texturePtr);
+}
+
+void Worker::handleValueName(uint64_t name, const char* str, size_t size) {
   auto& nameMap = dataContext.nameMap;
   if (nameMap.find(name) == nameMap.end()) {
-    nameMap[name] = std::string(str, sz);
+    nameMap[name] = std::string(str, size);
   }
+}
+
+void Worker::addTextureData(const char* data, size_t size) {
+  ASSERT(penddingTextureData == nullptr);
+  penddingTextureData = tgfx::Data::MakeWithCopy(data, size);
 }
 
 }  // namespace inspector

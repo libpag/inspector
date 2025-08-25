@@ -2,7 +2,7 @@
 //
 //  Tencent is pleased to support the open source community by making tgfx available.
 //
-//  Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
+//  Copyright (C) 2025 Tencent. All rights reserved.
 //
 //  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 //  in compliance with the License. You may obtain a copy of the License at
@@ -17,39 +17,12 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
-#include <atomic>
-#include <condition_variable>
-#include <cstdint>
-#include <functional>
 #include <string>
-#include <thread>
-#include <vector>
 
 namespace inspector {
-
-class ResolvService {
-  struct QueueItem {
-    uint32_t ip;
-    std::function<void(std::string&&)> callback;
-  };
-
+class ProjectPath {
  public:
-  explicit ResolvService(uint16_t port);
-
-  ~ResolvService();
-
-  void query(uint32_t ip, const std::function<void(std::string&&)>& callback);
-
- protected:
-  void worker();
-
- private:
-  std::atomic<bool> exit;
-  std::mutex mutex;
-  std::condition_variable conditionVariable;
-  std::vector<QueueItem> queue;
-  uint16_t port;
-  std::thread thread;
+  static std::string Absolute(const std::string& relativePath);
 };
-}  // namespace inspector
+
+}  // namespace tgfx

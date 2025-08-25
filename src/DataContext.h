@@ -20,19 +20,21 @@
 #include <mutex>
 #include "InspectorEvent.h"
 #include "StreamContext.h"
+#include "tgfx/core/Buffer.h"
 
 namespace inspector {
 class DataContext : public StreamContext {
  public:
-  std::mutex lock;
-  FrameData frameData;
-  std::vector<std::shared_ptr<OpTaskData>> opTasks;
-  std::vector<std::shared_ptr<OpTaskData>> opTaskStack;
-  std::unordered_map<uint64_t, std::string> nameMap;
-  std::unordered_map<uint32_t, std::vector<uint32_t>> opChilds;
-  std::unordered_map<uint32_t, std::shared_ptr<PropertyData>> properties;
-  std::unordered_map<uint32_t, std::shared_ptr<TextureData>> textures;
-  std::unordered_map<uint32_t, std::shared_ptr<VertexData>> vertexDatas;
+  std::mutex lock = {};
+  FrameData frameData = {};
+  std::vector<std::shared_ptr<OpTaskData>> opTasks = {};
+  std::vector<std::shared_ptr<OpTaskData>> opTaskStack = {};
+  std::unordered_map<uint64_t, std::string> nameMap = {};
+  std::unordered_map<uint32_t, std::vector<uint32_t>> opChilds = {};
+  std::unordered_map<uint32_t, std::shared_ptr<PropertyData>> properties = {};
+  std::unordered_map<uint64_t, std::shared_ptr<ImageTexture>> images = {};
+  std::unordered_map<uint32_t, std::shared_ptr<TextureData>> textures = {};
+  std::unordered_map<uint32_t, std::shared_ptr<VertexData>> vertexDatas = {};
   FrameData* framebase = nullptr;
   uint64_t opTaskCount = 0;
   int64_t baseTime = 0;

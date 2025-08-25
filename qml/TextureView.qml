@@ -130,12 +130,16 @@ Item {
 
                             TextureListDrawer {
                                 id: inputList
-                                imageLabel: "Input"
+                                imageLabel: 0
+                                worker: workerPtr
+                                viewData: viewDataPtr
                             }
 
                             TextureListDrawer {
                                 id: outputList
-                                imageLabel: "Output"
+                                imageLabel: 1
+                                worker: workerPtr
+                                viewData: viewDataPtr
                             }
                         }
                     }

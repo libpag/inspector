@@ -2,7 +2,7 @@
 //
 //  Tencent is pleased to support the open source community by making tgfx available.
 //
-//  Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
+//  Copyright (C) 2025 Tencent. All rights reserved.
 //
 //  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 //  in compliance with the License. You may obtain a copy of the License at
@@ -16,40 +16,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-#pragma once
-
-#include <atomic>
-#include <condition_variable>
-#include <cstdint>
-#include <functional>
-#include <string>
-#include <thread>
-#include <vector>
+#include "ProjectPath.h"
+#include <filesystem>
 
 namespace inspector {
+static std::string GetRootPath() {
+  std::filesystem::path filePath = __FILE__;
+  auto dir = filePath.parent_path().string();
+  return std::filesystem::path(dir + "/..").lexically_normal();
+}
 
-class ResolvService {
-  struct QueueItem {
-    uint32_t ip;
-    std::function<void(std::string&&)> callback;
-  };
+std::string ProjectPath::Absolute(const std::string& relativePath) {
+  std::filesystem::path path = relativePath;
+  if (path.is_absolute()) {
+    return path;
+  }
+  static const std::string rootPath = GetRootPath() + "/";
+  return std::filesystem::path(rootPath + relativePath).lexically_normal();
+}
 
- public:
-  explicit ResolvService(uint16_t port);
-
-  ~ResolvService();
-
-  void query(uint32_t ip, const std::function<void(std::string&&)>& callback);
-
- protected:
-  void worker();
-
- private:
-  std::atomic<bool> exit;
-  std::mutex mutex;
-  std::condition_variable conditionVariable;
-  std::vector<QueueItem> queue;
-  uint16_t port;
-  std::thread thread;
-};
-}  // namespace inspector
+}  // namespace tgfx

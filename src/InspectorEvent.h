@@ -22,6 +22,7 @@
 #include <vector>
 #include "Protocol.h"
 #include "tgfx/core/Data.h"
+#include "tgfx/core/Pixmap.h"
 #include "tgfx/gpu/PixelFormat.h"
 
 namespace inspector {
@@ -115,9 +116,17 @@ struct PropertyData {
   std::vector<std::shared_ptr<tgfx::Data>> processData;
 };
 
+struct ImageTexture {
+  uint8_t format;
+  int width;
+  int height;
+  size_t rowBytes;
+  std::shared_ptr<tgfx::Data> data;
+};
+
 struct TextureData {
-  std::vector<std::shared_ptr<tgfx::Data>> inputTextures;
-  std::shared_ptr<tgfx::Data> outputTexture;
+  std::vector<uint64_t> inputTextures = {};
+  uint64_t outputTexture = 0;
 };
 
 struct VertexData {

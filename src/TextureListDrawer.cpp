@@ -22,6 +22,7 @@
 #include <QSGImageNode>
 #include <iostream>
 #include "Draw.h"
+#include "ProjectPath.h"
 
 namespace inspector {
 static tgfx::Rect CalcInerRect(const tgfx::Rect& rect, float aspectRatio) {
@@ -130,10 +131,11 @@ void TextureListDrawer::draw() {
 
   canvas->setMatrix(tgfx::Matrix::MakeScale(appHost->density(), appHost->density()));
   canvas->translate(0, -static_cast<float>(scrollOffset * width()) / 200.f);
+  updateImageData();
   for (size_t i = 0; i < squareRects.size(); ++i) {
     DrawRect(canvas, squareRects[i], 0xFF535353);
-    if (!images[i]) {
-      return;
+    if (images.size() <= i) {
+      break;
     }
     auto imageRect =
         CalcInerRect(squareRects[i], images[i]->width() / static_cast<float>(images[i]->height()));
@@ -147,21 +149,56 @@ void TextureListDrawer::draw() {
   device->unlock();
 }
 
-void TextureListDrawer::updateImageData(std::initializer_list<std::string>& testImageSources) {
-
-  images.clear();
-  for (auto& imageSource : testImageSources) {
-    auto Image = tgfx::Image::MakeFromFile(imageSource);
-    Image = Image->makeMipmapped(true);
-    images.push_back(Image);
+void TextureListDrawer::updateImageData() {
+  if (selectOpTask == viewData->selectOpTask) {
+    return;
   }
-
+  images.clear();
+  selectOpTask = viewData->selectOpTask;
+  if (selectOpTask == -1) {
+    return;
+  }
+  const auto& dataContext = worker->getDataContext();
+  const auto& textures = dataContext.textures;
+  auto texturesIter = textures.find(static_cast<uint32_t>(selectOpTask));
+  if (texturesIter == textures.end()) {
+    return;
+  }
+  const auto texture = texturesIter->second;
+  if (lableType == LableType::Input) {
+    images.reserve(texture->inputTextures.size());
+    for (const auto& texturePtr: texture->inputTextures) {
+      addImage(texturePtr);
+    }
+  }
+  else {
+    addImage(texture->outputTexture);
+  }
   layoutDirty = true;
   update();
   emit selectedImage(nullptr);
 }
 
-void TextureListDrawer::setImageLabel(const QString&) {
+void TextureListDrawer::addImage(uint64_t texturePtr) {
+  const auto& dataContext = worker->getDataContext();
+  const auto& imageTexture = dataContext.images;
+  auto imageTextureIter = imageTexture.find(texturePtr);
+  if (imageTextureIter == imageTexture.end()) {
+    auto image = tgfx::Image::MakeFromFile(ProjectPath::Absolute("resources/loading.png"));
+    images.push_back(std::move(image));
+  }
+  else {
+    auto imageData = imageTextureIter->second;
+    auto codec = tgfx::ImageCodec::MakeFrom(imageData->data);
+    auto image = tgfx::Image::MakeFrom(codec);
+    if (image) {
+      images.push_back(std::move(image));
+    }
+  }
+}
+
+void TextureListDrawer::setImageLabel(int lable) {
+  lableType = static_cast<LableType>(lable);
 }
 
 QSGNode* TextureListDrawer::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*) {

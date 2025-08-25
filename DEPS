@@ -22,7 +22,7 @@
     },
     {
       "url": "https://github.com/Tencent/tgfx.git",
-      "commit": "ff01c45b1b00b5c732e388358cb3065188b23763",
+      "commit": "5da605d6a4a340a1cc0559dac1fddce21ef62dcd",
       "dir": "tgfx"
     }
     ]

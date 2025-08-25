@@ -30,10 +30,10 @@ void ReadTextureTag(DecodeStream* stream) {
     auto& inputTextures = ptr->inputTextures;
     auto inputTexturesCount = stream->readEncodedUint32();
     inputTextures.reserve(inputTexturesCount);
-    for (uint32_t j = 0; j < inputTexturesCount; ++j) {
-      inputTextures[j] = stream->readData();
-    }
-    ptr->outputTexture = stream->readData();
+    // for (uint32_t j = 0; j < inputTexturesCount; ++j) {
+    //   inputTextures[j] = stream->readData();
+    // }
+    // ptr->outputTexture = stream->readData();
 
     textures[childIndex] = ptr;
   }
@@ -46,10 +46,10 @@ TagType WriteTextureTag(EncodeStream* stream,
     stream->writeEncodedUint32(texture.first);
     const auto& textureData = texture.second;
     stream->writeEncodedUint32(static_cast<uint32_t>(textureData->inputTextures.size()));
-    for (const auto& inputTexture : textureData->inputTextures) {
-      stream->writeData(inputTexture.get());
-    }
-    stream->writeData(textureData->outputTexture.get());
+    // for (const auto& inputTexture : textureData->inputTextures) {
+      // stream->writeData(inputTexture.get());
+    // }
+    // stream->writeData(textureData->outputTexture.get());
   }
 
   return TagType::Texture;
