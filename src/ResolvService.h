@@ -35,6 +35,7 @@ class ResolvService {
   };
 
  public:
+  ResolvService() = default;
   explicit ResolvService(uint16_t port);
   ~ResolvService();
 

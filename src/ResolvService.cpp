@@ -26,9 +26,7 @@
 #endif
 
 namespace inspector {
-ResolvService::ResolvService(uint16_t port)
-    : port(port), thread([this] { worker(); })
-{
+ResolvService::ResolvService(uint16_t port) : port(port), thread([this] { worker(); }) {
 }
 
 ResolvService::~ResolvService() {
@@ -53,9 +51,7 @@ void ResolvService::worker() {
   for (;;) {
     std::unique_lock<std::mutex> lock(mutex);
     conditionVariable.wait(
-        lock, [this] {
-          return !queue.empty() || exit.load(std::memory_order_relaxed);
-        });
+        lock, [this] { return !queue.empty() || exit.load(std::memory_order_relaxed); });
     if (exit.load(std::memory_order_relaxed)) {
       return;
     }

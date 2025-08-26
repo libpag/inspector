@@ -16,13 +16,12 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <QApplication>
 #include <kddockwidgets/Config.h>
 #include <qwidget.h>
+#include <QApplication>
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSurfaceFormat>
-
 #include "StartView.h"
 
 int main(int argc, char* argv[]) {

@@ -106,9 +106,9 @@ class FileItem : public QObject {
   }
 
  private:
-  QString filesPath;
-  QString filesName;
-  QDateTime lastOpened;
+  QString filesPath = {};
+  QString filesName = {};
+  QDateTime lastOpened = {};
 };
 
 class StartView : public QObject {
@@ -169,15 +169,15 @@ class StartView : public QObject {
   void updateBroadcastClients();
 
  private:
-  QString lastOpenFile;
-  QStringList recentFiles;
-  QList<FileItem*> fileItems;
-  std::mutex resolvLock;
+  QString lastOpenFile = {};
+  QStringList recentFiles = {};
+  QList<FileItem*> fileItems = {};
+  std::mutex resolvLock = {};
   uint16_t port = 8086;
-  ResolvService resolv;
-  std::unique_ptr<tgfx::debug::UdpListen> broadcastListen;
-  std::unordered_map<uint64_t, ClientData*> clients;
-  std::unordered_map<std::string, std::string> resolvMap;
+  ResolvService resolv = {};
+  std::unique_ptr<tgfx::debug::UdpListen> broadcastListen = nullptr;
+  std::unordered_map<uint64_t, ClientData*> clients = {};
+  std::unordered_map<std::string, std::string> resolvMap = {};
 
   QTimer* broadcastTimer = nullptr;
   QQmlApplicationEngine* qmlEngine = nullptr;

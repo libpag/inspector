@@ -17,7 +17,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "StartView.h"
-
 #include <QApplication>
 #include <QFileInfo>
 #include <QQmlContext>
@@ -27,8 +26,7 @@
 #include "Socket.h"
 
 namespace inspector {
-ClientData::ClientData(Data data)
-    : data(std::move(data)) {
+ClientData::ClientData(Data data) : data(std::move(data)) {
 }
 
 StartView::StartView(QObject* parent) : QObject(parent), resolv(port) {
@@ -199,6 +197,7 @@ void StartView::updateBroadcastClients() {
   const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
                         std::chrono::system_clock::now().time_since_epoch())
                         .count();
+
   if (!broadcastListen) {
     bool isListen = false;
     broadcastListen = std::make_unique<tgfx::debug::UdpListen>();
@@ -213,7 +212,7 @@ void StartView::updateBroadcastClients() {
     }
   } else {
     tgfx::debug::IpAddress addr;
-    size_t len;
+    size_t len = 0;
     for (;;) {
       auto msg = broadcastListen->readData(len, addr, 0);
       if (!msg) {
@@ -239,7 +238,6 @@ void StartView::updateBroadcastClients() {
       if (activeTime >= 0) {
         if (it == clients.end()) {
           std::string ip(address);
-
           resolvLock.lock();
           if (resolvMap.find(ip) == resolvMap.end()) {
             resolvMap.emplace(ip, ip);
@@ -251,8 +249,8 @@ void StartView::updateBroadcastClients() {
             });
           }
           resolvLock.unlock();
-          auto client = new ClientData({time, protoVer, activeTime,    listenPort,
-                                       pid,  procname, std::move(ip), type});
+          auto client = new ClientData(
+              {time, protoVer, activeTime, listenPort, pid, procname, std::move(ip), type});
           clients.emplace(clientId, client);
           Q_EMIT clientItemsChanged();
         } else {
@@ -272,6 +270,7 @@ void StartView::updateBroadcastClients() {
         Q_EMIT clientItemsChanged();
       }
     }
+
     auto it = clients.begin();
     while (it != clients.end()) {
       const auto diff = time - it->second->data.time;
