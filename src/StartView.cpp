@@ -24,6 +24,7 @@
 #include <QSettings>
 #include "Protocol.h"
 #include "Socket.h"
+#include "tgfx/core/Clock.h"
 
 namespace inspector {
 ClientData::ClientData(Data data) : data(std::move(data)) {
@@ -106,7 +107,8 @@ void StartView::clearRecentFiles() {
 }
 
 QVector<QObject*> StartView::getFrameCaptureClientItems() const {
-  QVector<QObject*> clientDatas;
+  QVector<QObject*> clientDatas = {};
+  clientDatas.reserve(static_cast<int64_t>(clients.size()));
   for (auto& client : clients) {
     if (client.second->data.type == static_cast<uint8_t>(tgfx::debug::ToolType::FrameCapture)) {
       clientDatas.push_back(client.second);
@@ -116,7 +118,8 @@ QVector<QObject*> StartView::getFrameCaptureClientItems() const {
 }
 
 QVector<QObject*> StartView::getLayerTreeClientItems() const {
-  QVector<QObject*> clientDatas;
+  QVector<QObject*> clientDatas = {};
+  clientDatas.reserve(static_cast<int64_t>(clients.size()));
   for (auto& client : clients) {
     if (client.second->data.type == static_cast<uint8_t>(tgfx::debug::ToolType::LayerTree)) {
       clientDatas.push_back(client.second);
@@ -194,10 +197,7 @@ void StartView::saveRecentFiles() {
 }
 
 void StartView::updateBroadcastClients() {
-  const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now().time_since_epoch())
-                        .count();
-
+  const auto time = tgfx::Clock::Now();
   if (!broadcastListen) {
     bool isListen = false;
     broadcastListen = std::make_unique<tgfx::debug::UdpListen>();
