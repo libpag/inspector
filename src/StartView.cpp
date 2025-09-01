@@ -30,7 +30,8 @@ namespace inspector {
 ClientData::ClientData(Data data) : data(std::move(data)) {
 }
 
-StartView::StartView(QObject* parent) : QObject(parent), resolv(port) {
+StartView::StartView(QObject* parent) : QObject(parent) {
+  resolv = std::make_unique<ResolvService>(port);
   loadRecentFiles();
 
   broadcastTimer = new QTimer(this);
@@ -54,7 +55,7 @@ StartView::~StartView() {
 }
 
 QList<QObject*> StartView::getFileItems() const {
-  QList<QObject*> items;
+  QList<QObject*> items = {};
   items.reserve(fileItems.size());
   for (const auto& fileItem : fileItems) {
     items.append(fileItem);
@@ -169,7 +170,7 @@ void StartView::showStartView() {
 }
 
 void StartView::loadRecentFiles() {
-  QSettings settings("MyCompany", "Inspector");
+  QSettings settings("TGFX", "Inspector");
   recentFiles = settings.value(QStringLiteral("recentFiles")).toStringList();
 
   QStringList validFiles;
@@ -191,7 +192,7 @@ void StartView::loadRecentFiles() {
 }
 
 void StartView::saveRecentFiles() {
-  QSettings settings("MyCompany", "Inspector");
+  QSettings settings("TGFXInspector", "Inspector");
   settings.setValue(QStringLiteral("recentFiles"), recentFiles);
   settings.sync();
 }
@@ -214,17 +215,17 @@ void StartView::updateBroadcastClients() {
     tgfx::debug::IpAddress addr;
     size_t len = 0;
     for (;;) {
-      auto msg = broadcastListen->readData(len, addr, 0);
-      if (!msg) {
+      auto broadcastMessage = broadcastListen->readData(len, addr, 0);
+      if (!broadcastMessage) {
         break;
       }
       if (len > sizeof(tgfx::debug::BroadcastMessage)) {
         continue;
       }
       tgfx::debug::BroadcastMessage bm = {};
-      memcpy(&bm, msg, len);
+      memcpy(&bm, broadcastMessage, len);
       auto protoVer = bm.protocolVersion;
-      char procname[tgfx::debug::WelcomeMessageProgramNameSize];
+      char procname[tgfx::debug::WelcomeMessageProgramNameSize] = "";
       strcpy(procname, bm.programName);
       auto activeTime = bm.activeTime;
       auto listenPort = bm.listenPort;
@@ -241,11 +242,11 @@ void StartView::updateBroadcastClients() {
           resolvLock.lock();
           if (resolvMap.find(ip) == resolvMap.end()) {
             resolvMap.emplace(ip, ip);
-            resolv.query(ipNumerical, [&, ip](std::string&& name) {
+            resolv->query(ipNumerical, [&, ip](const char* name) {
               std::lock_guard<std::mutex> lock(resolvLock);
               auto iter = resolvMap.find(ip);
               assert(iter != resolvMap.end());
-              std::swap(iter->second, name);
+              iter->second = name;
             });
           }
           resolvLock.unlock();

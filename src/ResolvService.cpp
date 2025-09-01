@@ -26,16 +26,20 @@
 #endif
 
 namespace inspector {
-ResolvService::ResolvService(uint16_t port) : port(port), thread([this] { worker(); }) {
+ResolvService::ResolvService(uint16_t port) : port(port) {
+  thread = std::make_unique<std::thread>(worker);
 }
 
 ResolvService::~ResolvService() {
   exit.store(true, std::memory_order_relaxed);
   conditionVariable.notify_one();
-  thread.join();
+  if (thread) {
+    thread->join();
+    thread.reset();
+  }
 }
 
-void ResolvService::query(uint32_t ip, const std::function<void(std::string&&)>& callback) {
+void ResolvService::query(uint32_t ip, const std::function<void(const char*)>& callback) {
   std::lock_guard<std::mutex> lock(mutex);
   queue.emplace_back(QueueItem{ip, callback});
   conditionVariable.notify_one();

@@ -106,8 +106,8 @@ class FileItem : public QObject {
   }
 
  private:
-  QString filesPath = {};
-  QString filesName = {};
+  QString filesPath = "";
+  QString filesName = "";
   QDateTime lastOpened = {};
 };
 
@@ -169,12 +169,12 @@ class StartView : public QObject {
   void updateBroadcastClients();
 
  private:
-  QString lastOpenFile = {};
+  QString lastOpenFile = "";
   QStringList recentFiles = {};
   QList<FileItem*> fileItems = {};
   std::mutex resolvLock = {};
   uint16_t port = 8086;
-  ResolvService resolv = {};
+  std::unique_ptr<ResolvService> resolv = nullptr;
   std::unique_ptr<tgfx::debug::UdpListen> broadcastListen = nullptr;
   std::unordered_map<uint64_t, ClientData*> clients = {};
   std::unordered_map<std::string, std::string> resolvMap = {};

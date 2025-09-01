@@ -31,15 +31,15 @@ namespace inspector {
 class ResolvService {
   struct QueueItem {
     uint32_t ip = 0;
-    std::function<void(std::string&&)> callback = nullptr;
+    std::function<void(const char*)> callback = nullptr;
   };
 
  public:
-  ResolvService() = default;
   explicit ResolvService(uint16_t port);
+
   ~ResolvService();
 
-  void query(uint32_t ip, const std::function<void(std::string&&)>& callback);
+  void query(uint32_t ip, const std::function<void(const char*)>& callback);
 
  private:
   void worker();
@@ -49,6 +49,6 @@ class ResolvService {
   std::condition_variable conditionVariable = {};
   std::vector<QueueItem> queue = {};
   uint16_t port = 0;
-  std::thread thread;
+  std::unique_ptr<std::thread> thread = nullptr;
 };
 }  // namespace inspector
