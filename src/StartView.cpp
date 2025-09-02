@@ -130,14 +130,14 @@ QVector<QObject*> StartView::getLayerTreeClientItems() const {
 }
 
 void StartView::connectToClient(QObject* object) {
-  auto client = dynamic_cast<ClientData*>(object);
+  auto client = static_cast<ClientData*>(object);
   if (client) {
     // TODO Connect to Insepector
   }
 }
 
 void StartView::connectToClientByLayerInspector(QObject* object) {
-  auto client = dynamic_cast<ClientData*>(object);
+  auto client = static_cast<ClientData*>(object);
   if (client) {
     // TODO Connect to Layer Inspector
   }
@@ -150,7 +150,7 @@ void StartView::showStartView() {
     qmlEngine->load(QUrl(QStringLiteral("qrc:/qml/StartView.qml")));
 
     if (!qmlEngine->rootObjects().isEmpty()) {
-      auto startWindow = dynamic_cast<QQuickWindow*>(qmlEngine->rootObjects().first());
+      auto startWindow = static_cast<QQuickWindow*>(qmlEngine->rootObjects().first());
       startWindow->setFlags(Qt::Window);
       startWindow->setTitle("Inspector - Start");
       startWindow->resize(1000, 600);
@@ -164,7 +164,7 @@ void StartView::showStartView() {
   }
 
   if (!qmlEngine->rootObjects().isEmpty()) {
-    auto startWindow = dynamic_cast<QQuickWindow*>(qmlEngine->rootObjects().first());
+    auto startWindow = static_cast<QQuickWindow*>(qmlEngine->rootObjects().first());
     startWindow->show();
   }
 }

@@ -27,7 +27,7 @@
 
 namespace inspector {
 ResolvService::ResolvService(uint16_t port) : port(port) {
-  thread = std::make_unique<std::thread>(worker);
+  thread = std::make_unique<std::thread>([this] { worker(); });
 }
 
 ResolvService::~ResolvService() {

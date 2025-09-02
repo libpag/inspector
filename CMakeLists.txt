@@ -33,8 +33,6 @@ set(TGFX_USE_QT ON)
 set(TGFX_BUILD_INSPECTOR OFF)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 add_subdirectory(${TGFX_DIR} tgfx EXCLUDE_FROM_ALL)
-list(APPEND PAG_STATIC_LIBS $<TARGET_FILE:tgfx>)
-list(APPEND PAG_DEPEND_TARGETS tgfx)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets OpenGL qml Quick WebSockets Network QuickControls2 Core5Compat)
 list(APPEND TGFX_INSPECTOR_LIBS Qt6::Core Qt6::Widgets Qt6::WebSockets Qt6::OpenGL Qt6::Qml Qt6::Quick Qt6::Network
@@ -86,8 +84,11 @@ list(APPEND TGFX_INSPECTOR_DEFINE KDDW_FRONTEND_QTQUICK KDDW_FRONTEND_QT KDDW_QT
 
 list(APPEND TGFX_INSPECTOR_INCLUDE ./third_party/KDDockWidgets/src/fwd_headers)
 
+list(APPEND TGFX_INSPECTOR_OPTIONS -fno-rtti)
+
 add_executable(inspectorTool ${RC_FILES} ${TGFX_INSPECTOR_FILES} ${TGFX_INSPECTOR_COMMON_FILES} ${QT_RESOURCES})
 target_include_directories(inspectorTool PUBLIC ${TGFX_INSPECTOR_SRC} ${TGFX_INSPECTOR_COMMON_INCLUDE})
 target_include_directories(inspectorTool SYSTEM PRIVATE ${TGFX_INSPECTOR_INCLUDE})
 target_compile_definitions(inspectorTool PUBLIC ${TGFX_INSPECTOR_DEFINE})
+target_compile_options(inspectorTool PUBLIC ${TGFX_INSPECTOR_OPTIONS})
 target_link_libraries(inspectorTool tgfx ${TGFX_INSPECTOR_LIBS})
