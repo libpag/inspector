@@ -27,5 +27,5 @@ class ViewData : public QObject {
   uint32_t frameStart = 0;
 
   uint32_t opTaskFilterType = std::numeric_limits<uint32_t>::max();
-  std::string opTaskFilterName;
+  std::string opTaskFilterName = {};
 };

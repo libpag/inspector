@@ -37,11 +37,12 @@ struct StringLocation {
 };
 
 struct FrameEvent {
-  int64_t start;
-  int64_t end;
-  int64_t drawCall;
-  int64_t triangles;
-  int32_t frameImage;
+  bool captured = false;
+  int64_t start = 0;
+  int64_t end = -1;
+  int64_t drawCall = 0;
+  int64_t triangles = 0;
+  int32_t frameImage = 0;
 };
 
 struct FrameData {
@@ -117,6 +118,7 @@ struct PropertyData {
 };
 
 struct ImageTexture {
+  bool isInput;
   uint8_t format;
   int width;
   int height;

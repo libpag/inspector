@@ -49,6 +49,7 @@ class InspectorView : public QObject {
   Q_INVOKABLE bool saveFile();
   Q_INVOKABLE void nextFrame();
   Q_INVOKABLE void preFrame();
+  Q_INVOKABLE void captureFrame();
 
   Q_SLOT void onCloseView(QQuickCloseEvent*);
   Q_SIGNAL void closeView(QObject* view);

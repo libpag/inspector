@@ -133,6 +133,11 @@ DecodeStream Worker::readBodyBytes(DecodeStream* stream) {
   return stream->readBytes(bodyLength);
 }
 
+void Worker::queryCaptureFrame() {
+  tgfx::debug::ServerQueryPacket query{tgfx::debug::ServerQuery::CaptureFrame, 0, 10};
+  sock.sendData(&query, ServerQueryPacketSize);
+}
+
 int64_t Worker::getFrameTime(const FrameData& fd, size_t idx) const {
   if (fd.continuous) {
     if (idx < fd.frames.size() - 1) {
@@ -162,6 +167,10 @@ int64_t Worker::getFrameDrawCall(uint32_t index) const {
 
 int64_t Worker::getFrameTriangles(uint32_t index) const {
   return dataContext.frameData.frames[index].triangles;
+}
+
+bool Worker::getFrameCaptured(uint32_t index) const {
+  return dataContext.frameData.frames[index].captured;
 }
 
 FrameData* Worker::getFrameData() {
@@ -236,8 +245,8 @@ void Worker::exec() {
     }
     dataContext.baseTime = welcome.initBegin;
     const auto initEnd = tscTime(welcome.initEnd);
-    dataContext.frameData.frames.push_back(FrameEvent{0, -1, 0, 0, -1});
-    dataContext.frameData.frames.push_back(FrameEvent{initEnd, -1, 0, 0, -1});
+    dataContext.frameData.frames.push_back(FrameEvent{false, 0, -1, 0, 0, -1});
+    dataContext.frameData.frames.push_back(FrameEvent{false, initEnd, -1, 0, 0, -1});
     dataContext.lastTime = initEnd;
     refTime = welcome.refTime;
   }
@@ -259,7 +268,7 @@ void Worker::exec() {
       CLOSE_EXEC;
     }
 
-    NetBuffer netbuf;
+    NetBuffer netbuf = {};
     {
       std::unique_lock<std::mutex> lock(netReadLock);
       netReadCv.wait(lock, [this] { return !netRead.empty(); });
@@ -315,10 +324,25 @@ void Worker::exec() {
   }
 }
 
-static bool IsJPEG(const uint8_t* data, size_t size) {
+static bool IsJpeg(const std::shared_ptr<tgfx::Data>& data) {
+  constexpr uint8_t jpegSig[] = {0xFF, 0xD8, 0xFF};
+  return data->size() >= 3 && !memcmp(data->bytes(), jpegSig, sizeof(jpegSig));
+}
+
+static bool IsPng(const std::shared_ptr<tgfx::Data>& data) {
+  constexpr uint8_t png_signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+  return data->size() >= 8 && !memcmp(data->bytes(), &png_signature[0], 8);
+}
+
+static bool IsWebp(const std::shared_ptr<tgfx::Data>& data) {
+  const char* bytes = static_cast<const char*>(data->data());
+  return data->size() >= 14 && !memcmp(bytes, "RIFF", 4) && !memcmp(&bytes[8], "WEBPVP", 6);
+}
+
+static bool IsEncodeTexture(const uint8_t* data, size_t size) {
   auto offset = sizeof(tgfx::debug::MsgHeader) + sizeof(tgfx::debug::StringTransferMsg) + sizeof(uint32_t);
-  const auto pixelsData = data + offset;
-  return (size >= 3 + offset && pixelsData[0] == 0xFF && pixelsData[1] == 0xD8 && pixelsData[2] == 0xFF);
+  const auto pixelsData = tgfx::Data::MakeWithoutCopy(data + offset, size);
+  return IsJpeg(pixelsData) || IsWebp(pixelsData) || IsPng(pixelsData);
 }
 
 #define CLOSE_NETWORK                            \
@@ -359,14 +383,12 @@ void Worker::netWork() {
     auto bb = bytes.load(std::memory_order_relaxed);
     bytes.store(bb + sizeof(lz4Size) + lz4Size, std::memory_order_relaxed);
     auto size = lz4Size;
-    if (IsJPEG(lz4Buffer.bytes(), lz4Size)) {
+    if (IsEncodeTexture(lz4Buffer.bytes(), lz4Size)) {
       memcpy(buf, lz4Buffer.bytes(), lz4Size);
     }
     else {
       size = lz4Handler->decode(reinterpret_cast<uint8_t*>(buf), MaxDecodeBufferSize, lz4Buffer.bytes(), lz4Size);
     }
-    LOGI("rev data %ld, decode data %ld", lz4Size, size);
-    assert(size >= 0);
     bb = decBytes.load(std::memory_order_relaxed);
     decBytes.store(bb + static_cast<uint64_t>(size), std::memory_order_relaxed);
 
@@ -491,8 +513,11 @@ bool Worker::process(const tgfx::debug::MsgItem& ev) {
     case tgfx::debug::MsgType::TextureData:
       processTextureData(ev.textureData);
       break;
-    case tgfx::debug::MsgType::Texture:
-      processTexture(ev.textureSampler);
+    case tgfx::debug::MsgType::InputTexture:
+      processTexture(ev.textureSampler, true);
+      break;
+    case tgfx::debug::MsgType::OutputTexture:
+      processTexture(ev.textureSampler, false);
       break;
     case tgfx::debug::MsgType::KeepAlive:
     default:
@@ -501,7 +526,7 @@ bool Worker::process(const tgfx::debug::MsgItem& ev) {
   return true;
 }
 
-int64_t RefTime(int64_t& reference, int64_t delta) {
+static int64_t RefTime(int64_t& reference, int64_t delta) {
   const auto refTime = reference + delta;
   reference = refTime;
   return refTime;
@@ -606,7 +631,7 @@ void Worker::processFrameMark(const tgfx::debug::FrameMarkMsg& ev) {
   auto& fd = dataContext.frameData;
 
   const auto time = tscTime(ev.usTime);
-  fd.frames.push_back(FrameEvent{time, -1, 0, 0, -1});
+  fd.frames.push_back(FrameEvent{ev.captured, time, -1, 0, 0, -1});
   if (dataContext.lastTime < time) {
     dataContext.lastTime = time;
   }
@@ -616,9 +641,11 @@ void Worker::processTextureData(const tgfx::debug::TextureDataMsg& ev) {
   auto& images = dataContext.images;
   auto pixelsIter = images.find(ev.texturePtr);
   if (pixelsIter != images.end()) {
+    penddingTextureData.reset();
     return;
   }
   auto image = std::make_shared<ImageTexture>();
+  image->isInput = ev.isInput;
   image->format = ev.format;
   image->width = ev.width;
   image->height = ev.height;
@@ -627,7 +654,7 @@ void Worker::processTextureData(const tgfx::debug::TextureDataMsg& ev) {
   images[ev.texturePtr] = std::move(image);
 }
 
-void Worker::processTexture(const tgfx::debug::TextureSamplerMsg& ev) {
+void Worker::processTexture(const tgfx::debug::TextureSamplerMsg& ev, bool isInput) {
   auto& stack = dataContext.opTaskStack;
   if (stack.empty()) {
     return;
@@ -643,7 +670,12 @@ void Worker::processTexture(const tgfx::debug::TextureSamplerMsg& ev) {
   else {
     textureData = texture->second;
   }
-  textureData->inputTextures.push_back(ev.texturePtr);
+  if (isInput) {
+    textureData->inputTextures.push_back(ev.texturePtr);
+  }
+  else {
+    textureData->outputTexture = ev.texturePtr;
+  }
 }
 
 void Worker::handleValueName(uint64_t name, const char* str, size_t size) {
@@ -655,7 +687,8 @@ void Worker::handleValueName(uint64_t name, const char* str, size_t size) {
 
 void Worker::addTextureData(const char* data, size_t size) {
   ASSERT(penddingTextureData == nullptr);
-  penddingTextureData = tgfx::Data::MakeWithCopy(data, size);
+  auto imageData = tgfx::Data::MakeWithCopy(data, size);
+  penddingTextureData = std::move(imageData);
 }
 
 }  // namespace inspector

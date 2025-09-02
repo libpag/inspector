@@ -115,20 +115,32 @@ void FramesDrawer::drawFrames(tgfx::Canvas* canvas) {
   int i = 0;
   uint32_t idx = 0;
   while (i < onScreen && viewData->frameStart + idx < total) {
-    auto frameTime = worker->getFrameTime(*frames, size_t(viewData->frameStart + idx));
+    auto frameIndex = viewData->frameStart + idx;
+    auto frameTime = worker->getFrameTime(*frames, frameIndex);
+    auto frameCaptured = worker->getFrameCaptured(frameIndex);
     const auto currentHeight =
         std::min(MaxFrameTime, frameTime) / float(MaxFrameTime) * float(height() - 2);
     const auto frameHeight = std::max(1.f, currentHeight);
     auto color = GetFrameColor(static_cast<uint64_t>(frameTime), frameTarget);
-
+    auto capturedColor = 0xAAFF990B;
     if (frameWidth != 1) {
+      if (frameCaptured) {
+        auto p1 = tgfx::Point{static_cast<float>(i * frameWidth) + 2.f, 1.f};
+        auto p2 =
+            tgfx::Point{(float)frameWidth + i * frameWidth - p1.x, (float)height() - p1.y};
+        DrawRect(canvas, p1, p2, capturedColor);
+      }
       auto p1 = tgfx::Point{2.f + i * frameWidth, (float)height() - 1.f - frameHeight};
       auto p2 =
           tgfx::Point{(float)frameWidth + i * frameWidth - p1.x, (float)height() - 1.f - p1.y};
       DrawRect(canvas, p1, p2, color);
     } else {
-      auto p1 = tgfx::Point{1.f + i, (float)height() - 2 - frameHeight};
-      auto p2 = tgfx::Point{1.f + i, (float)height() - 2};
+      auto p2 = tgfx::Point{1.f + i, (float)height() - 2.f};
+      if (frameCaptured) {
+        auto p1 = tgfx::Point{1.f + i, 2.f};
+        DrawLine(canvas, p1, p2, capturedColor);
+      }
+      auto p1 = tgfx::Point{1.f + i, (float)height() - 2.f - frameHeight};
       DrawLine(canvas, p1, p2, color);
     }
     i++;

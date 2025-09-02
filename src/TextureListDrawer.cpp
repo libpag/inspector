@@ -180,18 +180,33 @@ void TextureListDrawer::updateImageData() {
 }
 
 void TextureListDrawer::addImage(uint64_t texturePtr) {
+  if (texturePtr == 0) {
+    return;
+  }
   const auto& dataContext = worker->getDataContext();
   const auto& imageTexture = dataContext.images;
   auto imageTextureIter = imageTexture.find(texturePtr);
-  if (imageTextureIter == imageTexture.end()) {
-    auto image = tgfx::Image::MakeFromFile(ProjectPath::Absolute("resources/loading.png"));
-    images.push_back(std::move(image));
-  }
-  else {
+  if (imageTextureIter != imageTexture.end()) {
     auto imageData = imageTextureIter->second;
     auto codec = tgfx::ImageCodec::MakeFrom(imageData->data);
     auto image = tgfx::Image::MakeFrom(codec);
     if (image) {
+      images.push_back(std::move(image));
+    }
+  }
+  else {
+    imageTextureIter = imageTexture.find(texturePtr + viewData->selectFrame);
+    LOGI("input texture id %llu", texturePtr + viewData->selectFrame);
+    if (imageTextureIter != imageTexture.end()) {
+      auto imageData = imageTextureIter->second;
+      auto codec = tgfx::ImageCodec::MakeFrom(imageData->data);
+      auto image = tgfx::Image::MakeFrom(codec);
+      if (image) {
+        images.push_back(std::move(image));
+      }
+    }
+    else {
+      auto image = tgfx::Image::MakeFromFile(ProjectPath::Absolute("resources/loading.png"));
       images.push_back(std::move(image));
     }
   }

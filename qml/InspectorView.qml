@@ -108,10 +108,7 @@ ApplicationWindow {
                 text: qsTr("Capture Frame")
                 enabled: !inspectorViewModel.isOpenFile
                 shortcut: "F12"
-                onTriggered: {
-                    console.log("Capture Frame clicked")
-                    //todo: capture frame api call in the InspectorView
-                }
+                onTriggered: inspectorViewModel.captureFrame()
             }
 
             Action {
@@ -296,7 +293,7 @@ ApplicationWindow {
                             onEntered: parent.scale = 1.1
                             onExited: parent.scale = 1.0
                             onClicked: {
-                                console.log("capture clicked")
+                                inspectorViewModel.captureFrame()
                             }
                         }
                     }

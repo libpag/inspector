@@ -33,8 +33,8 @@ static constexpr size_t MaxDecodeBufferSize = 10 * 1024 * 1024;
 class Worker : public QObject {
  public:
   struct NetBuffer {
-    int bufferOffset;
-    size_t size;
+    int bufferOffset = 0;
+    size_t size = 0;
   };
 
   explicit Worker(std::string& filePath);
@@ -43,12 +43,14 @@ class Worker : public QObject {
 
   bool openFile(const std::string& filePath);
   bool saveFile(const std::string& filePath);
+  void queryCaptureFrame();
 
   int64_t getFrameTime(const FrameData& fd, size_t idx) const;
   int64_t getLastTime() const;
   int64_t getFrameStart(uint32_t index) const;
   int64_t getFrameDrawCall(uint32_t index) const;
   int64_t getFrameTriangles(uint32_t index) const;
+  bool getFrameCaptured(uint32_t index) const;
   size_t getFrameCount() const;
   bool hasExpection() const;
   std::vector<std::string>& getErrorMessage();
@@ -81,7 +83,7 @@ class Worker : public QObject {
   void processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev);
   void processFrameMark(const tgfx::debug::FrameMarkMsg& ev);
   void processTextureData(const tgfx::debug::TextureDataMsg& ev);
-  void processTexture(const tgfx::debug::TextureSamplerMsg& ev);
+  void processTexture(const tgfx::debug::TextureSamplerMsg& ev, bool isInput);
 
   void handleValueName(uint64_t name, const char* str, size_t sz);
   void addTextureData(const char* data, size_t sz);
@@ -99,7 +101,6 @@ class Worker : public QObject {
   uint16_t port = 0;
 
   std::unique_ptr<tgfx::debug::LZ4CompressionHandler> lz4Handler = nullptr;
-  // void* lz4Stream;
   char* dataBuffer = nullptr;
   int bufferOffset = 0;
 
@@ -107,24 +108,24 @@ class Worker : public QObject {
 
   std::thread workThread;
   std::thread netThread;
-  std::atomic<bool> isConnected{false};
-  std::atomic<bool> isShutDown{false};
-  std::atomic<bool> hasData{false};
-  std::atomic<uint8_t> handshake{0};
+  std::atomic<bool> isConnected = false;
+  std::atomic<bool> isShutDown = false;
+  std::atomic<bool> hasData = false;
+  std::atomic<uint8_t> handshake = 0;
 
-  std::atomic<uint64_t> bytes{0};
-  std::atomic<uint64_t> decBytes{0};
+  std::atomic<uint64_t> bytes = 0;
+  std::atomic<uint64_t> decBytes = 0;
 
-  std::vector<NetBuffer> netRead;
-  std::mutex netReadLock;
-  std::condition_variable netReadCv;
+  std::vector<NetBuffer> netRead = {};
+  std::mutex netReadLock = {};
+  std::condition_variable netReadCv = {};
 
   int netWriteCnt = 0;
-  std::mutex netWriteLock;
-  std::condition_variable netWriteCv;
+  std::mutex netWriteLock = {};
+  std::condition_variable netWriteCv = {};
 
-  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueue;
-  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueuePrio;
+  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueue = {};
+  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueuePrio = {};
   // Control the rate at which query requests are sent to the server to avoid
   // excessive server pressure caused by sending too many requests
   size_t serverQuerySpaceLeft = 0;

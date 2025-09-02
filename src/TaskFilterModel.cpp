@@ -30,8 +30,7 @@ void TaskFilterItem::appendChild(std::unique_ptr<TaskFilterItem>& child) {
 }
 
 TaskFilterItem* TaskFilterItem::child(uint32_t row) {
-  return row >= static_cast<uint32_t>(0) && row < childItems.size() ? childItems.at(row).get()
-                                                                    : nullptr;
+  return row < childItems.size() ? childItems.at(row).get() : nullptr;
 }
 
 int TaskFilterItem::childCount() const {

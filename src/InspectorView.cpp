@@ -196,4 +196,9 @@ void InspectorView::preFrame() {
   auto frameDrawer = inspectorWindow->findChild<FramesDrawer*>("framesDrawer");
   Q_EMIT frameDrawer->selectFrame();
 }
+
+void InspectorView::captureFrame() {
+  worker.queryCaptureFrame();
+}
+
 }  // namespace inspector
