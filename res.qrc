@@ -11,12 +11,18 @@
         <file>qml/MyGroup.qml</file>
         <file>qml/AttributeView.qml</file>
         <file>qml/IndicatorText.qml</file>
+        <file>qml/ShaderText.qml</file>
+        <file>qml/ShaderView.qml</file>
+        <file>qml/ListViewItem.qml</file>
+        <file>qml/MeshView.qml</file>
+        <file>qml/MeshListItem.qml</file>
         <file>icons/InspectorIcon.png</file>
         <file>icons/LayerTreeIcon.png</file>
         <file>icons/openfile.png</file>
         <file>icons/chooseOpenFile.png</file>
         <file>icons/capture.png</file>
         <file>icons/arrow_icon.png</file>
+        <file>icons/code.png</file>
         <file>icons/savefile.png</file>
         <file>icons/disconnected.png</file>
         <file>qml/layerInspector/LayerAttribute.qml</file>

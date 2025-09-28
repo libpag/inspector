@@ -2,7 +2,7 @@
 //
 //  Tencent is pleased to support the open source community by making tgfx available.
 //
-//  Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
+//  Copyright (C) 2025 Tencent. All rights reserved.
 //
 //  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 //  in compliance with the License. You may obtain a copy of the License at
@@ -17,11 +17,20 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "EncodeStream.h"
-#include "TagHeader.h"
-namespace inspector {
-void ReadVertexBufferTag(DecodeStream* stream);
+#include <memory>
 
-TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas);
+namespace inspector {
+class LZ4DecompressionHandler {
+ public:
+  static std::unique_ptr<LZ4DecompressionHandler> Make();
+
+  static size_t GetMaxOutputSize(size_t inputSize);
+
+  virtual ~LZ4DecompressionHandler() = default;
+
+  virtual size_t decode(uint8_t* dstBuffer, size_t dstSize, const uint8_t* srcBuffer,
+                        size_t srcSize) const = 0;
+
+  virtual void reset() = 0;
+};
 }  // namespace inspector

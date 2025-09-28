@@ -24,32 +24,60 @@ namespace inspector {
 void ReadVertexBufferTag(DecodeStream* stream) {
   auto count = stream->readEncodedUint32();
   auto context = dynamic_cast<DataContext*>(stream->context);
-  auto& vertexBuffer = context->vertexDatas;
+  auto& meshDatas = context->meshDatas;
   for (uint32_t i = 0; i < count; ++i) {
-    auto childIndex = stream->readEncodedUint32();
-
-    auto ptr = std::make_shared<VertexData>();
-    auto vertexCount = stream->readEncodedUint32();
-    stream->readFloatList(ptr->vertexData.data(), vertexCount, SPATIAL_PRECISION);
-    ptr->hasUV = stream->readBoolean();
-    ptr->hasColor = stream->readBoolean();
-
-    vertexBuffer[childIndex] = ptr;
+    auto opTaskPtr = stream->readEncodedUint64();
+    auto meshData = std::make_shared<MeshData>();
+    meshData->type = static_cast<tgfx::inspect::VertexProviderType>(stream->readUint8());
+    if (meshData->type == tgfx::inspect::VertexProviderType::RectsVertexProvider) {
+      auto meshInfo = std::make_shared<tgfx::inspect::RectMeshInfo>();
+      meshInfo->rectCount = stream->readEncodedUint32();
+      meshInfo->drawOpPtr = stream->readEncodedUint64();
+      meshInfo->aaType = stream->readUint8();
+      meshInfo->hasUVCoord = stream->readBoolean();
+      meshInfo->hasColor = stream->readBoolean();
+      meshInfo->hasSubset = stream->readBoolean();
+      meshData->info = std::move(meshInfo);
+    }
+    else {
+      auto meshInfo = std::make_shared<tgfx::inspect::RRectMeshInfo>();
+      meshInfo->rectCount = stream->readEncodedUint32();
+      meshInfo->drawOpPtr = stream->readEncodedUint64();
+      meshInfo->hasColor = stream->readBoolean();
+      meshInfo->hasStroke = stream->readBoolean();
+      meshInfo->useScale = stream->readBoolean();
+      meshData->info = std::move(meshInfo);
+    }
+    meshData->vertexData = stream->readData();
+    meshDatas[opTaskPtr] = std::move(meshData);
   }
 }
 
 TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint32_t, std::shared_ptr<VertexData>>* vertexDatas) {
+    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas) {
   stream->writeEncodedUint32(static_cast<uint32_t>(vertexDatas->size()));
   for (const auto& vertexBuffer : *vertexDatas) {
-    stream->writeEncodedUint32(vertexBuffer.first);
-
-    auto vertexData = vertexBuffer.second;
-    auto vertexDataCount = static_cast<uint32_t>(vertexData->vertexData.size());
-    stream->writeEncodedUint32(vertexDataCount);
-    stream->writeFloatList(vertexData->vertexData.data(), vertexDataCount, SPATIAL_PRECISION);
-    stream->writeBoolean(vertexData->hasUV);
-    stream->writeBoolean(vertexData->hasColor);
+    stream->writeEncodedUint64(vertexBuffer.first);
+    const auto& meshData = vertexBuffer.second;
+    stream->writeUint8(static_cast<uint8_t>(meshData->type));
+    if (meshData->type == tgfx::inspect::VertexProviderType::RectsVertexProvider) {
+      auto meshInfo = std::static_pointer_cast<tgfx::inspect::RectMeshInfo>(meshData->info);
+      stream->writeEncodedUint32(meshInfo->rectCount);
+      stream->writeEncodedUint64(meshInfo->drawOpPtr);
+      stream->writeUint8(meshInfo->aaType);
+      stream->writeBoolean(meshInfo->hasUVCoord);
+      stream->writeBoolean(meshInfo->hasColor);
+      stream->writeBoolean(meshInfo->hasSubset);
+    }
+    else {
+      auto meshInfo = std::static_pointer_cast<tgfx::inspect::RRectMeshInfo>(meshData->info);
+      stream->writeEncodedUint32(meshInfo->rectCount);
+      stream->writeEncodedUint64(meshInfo->drawOpPtr);
+      stream->writeBoolean(meshInfo->hasColor);
+      stream->writeBoolean(meshInfo->useScale);
+      stream->writeBoolean(meshInfo->hasStroke);
+    }
+    stream->writeData(meshData->vertexData.get());
   }
   return TagType::VertexBuffer;
 }

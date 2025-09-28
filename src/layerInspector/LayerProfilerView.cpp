@@ -64,24 +64,24 @@ LayerProfilerView::LayerProfilerView(QString ip, quint16 port)
           [this](uint64_t address) { processSelectedLayer(address); });
 
   connect(m_LayerTreeModel, &LayerTreeModel::hoveredAddress, [this](uint64_t address) {
-    auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::HoverLayerAddress, address);
+    auto data = feedBackData(tgfx::inspect::LayerTreeMessage::HoverLayerAddress, address);
     m_TcpSocketClient->sendData(data);
   });
 
   connect(m_LayerAttributeModel, &LayerAttributeModel::expandSubAttributeSignal,
           [this](uint64_t id) {
-            auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::SerializeSubAttribute, id);
+            auto data = feedBackData(tgfx::inspect::LayerTreeMessage::SerializeSubAttribute, id);
             m_TcpSocketClient->sendData(data);
           });
 
   connect(m_LayerAttributeModel, &LayerAttributeModel::flushLayerAttribute,
           [this](uint64_t address) {
-            auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::FlushAttribute, address);
+            auto data = feedBackData(tgfx::inspect::LayerTreeMessage::FlushAttribute, address);
             m_TcpSocketClient->sendData(data);
           });
 
   connect(m_LayerTreeModel, &LayerTreeModel::flushLayerTreeSignal, [this]() {
-    auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::FlushLayerTree, UINT64_MAX);
+    auto data = feedBackData(tgfx::inspect::LayerTreeMessage::FlushLayerTree, UINT64_MAX);
     m_TcpSocketClient->sendData(data);
   });
 
@@ -100,24 +100,24 @@ LayerProfilerView::LayerProfilerView()
           [this](uint64_t address) { processSelectedLayer(address); });
 
   connect(m_LayerTreeModel, &LayerTreeModel::hoveredAddress, [this](uint64_t address) {
-    auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::HoverLayerAddress, address);
+    auto data = feedBackData(tgfx::inspect::LayerTreeMessage::HoverLayerAddress, address);
     m_WebSocketServer->SendData(data);
   });
 
   connect(m_LayerAttributeModel, &LayerAttributeModel::expandSubAttributeSignal,
           [this](uint64_t id) {
-            auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::SerializeSubAttribute, id);
+            auto data = feedBackData(tgfx::inspect::LayerTreeMessage::SerializeSubAttribute, id);
             m_WebSocketServer->SendData(data);
           });
 
   connect(m_LayerAttributeModel, &LayerAttributeModel::flushLayerAttribute,
           [this](uint64_t address) {
-            auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::FlushAttribute, address);
+            auto data = feedBackData(tgfx::inspect::LayerTreeMessage::FlushAttribute, address);
             m_WebSocketServer->SendData(data);
           });
 
   connect(m_LayerTreeModel, &LayerTreeModel::flushLayerTreeSignal, [this]() {
-    auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::FlushLayerTree, UINT64_MAX);
+    auto data = feedBackData(tgfx::inspect::LayerTreeMessage::FlushLayerTree, UINT64_MAX);
     m_WebSocketServer->SendData(data);
   });
 
@@ -141,7 +141,7 @@ LayerProfilerView::~LayerProfilerView() {
 }
 
 void LayerProfilerView::SetHoveredSwitchState(bool state) {
-  auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::EnableLayerInspector, state);
+  auto data = feedBackData(tgfx::inspect::LayerTreeMessage::EnableLayerInspector, state);
   if (m_WebSocketServer) m_WebSocketServer->SendData(data);
   if (m_TcpSocketClient) m_TcpSocketClient->sendData(data);
 }
@@ -236,10 +236,10 @@ void LayerProfilerView::LayerProlfilerQMLImpl() {
 void LayerProfilerView::ProcessMessage(const QByteArray& message) {
   auto ptr = message.data();
   auto map = flexbuffers::GetRoot((const uint8_t*)ptr, (size_t)message.size()).AsMap();
-  auto type = static_cast<tgfx::debug::LayerInspectorMsgType>(map["Type"].AsUInt8());
+  auto type = static_cast<tgfx::inspect::LayerTreeMessage>(map["Type"].AsUInt8());
   auto contentMap = map["Content"].AsMap();
   switch (type) {
-    case tgfx::debug::LayerInspectorMsgType::LayerTree: {
+    case tgfx::inspect::LayerTreeMessage::LayerTree: {
       m_LayerTreeModel->setLayerTreeData(contentMap);
       auto currentAddress = m_LayerAttributeModel->GetCurrentAddress();
       if (!m_LayerTreeModel->selectLayer(currentAddress)) {
@@ -247,26 +247,26 @@ void LayerProfilerView::ProcessMessage(const QByteArray& message) {
       }
       break;
     }
-    case tgfx::debug::LayerInspectorMsgType::LayerAttribute: {
+    case tgfx::inspect::LayerTreeMessage::LayerAttribute: {
       m_LayerAttributeModel->setLayerAttribute(contentMap);
       break;
     }
-    case tgfx::debug::LayerInspectorMsgType::LayerSubAttribute: {
+    case tgfx::inspect::LayerTreeMessage::LayerSubAttribute: {
       m_LayerAttributeModel->setLayerSubAttribute(contentMap);
       break;
     }
-    case tgfx::debug::LayerInspectorMsgType::PickedLayerAddress: {
+    case tgfx::inspect::LayerTreeMessage::PickedLayerAddress: {
       auto address = contentMap["Address"].AsUInt64();
       processSelectedLayer(address);
       m_LayerTreeModel->selectLayer(address);
       break;
     }
-    case tgfx::debug::LayerInspectorMsgType::FlushAttributeAck: {
+    case tgfx::inspect::LayerTreeMessage::FlushAttributeAck: {
       auto address = contentMap["Address"].AsUInt64();
       processSelectedLayer(address);
       break;
     }
-    case tgfx::debug::LayerInspectorMsgType::ImageData: {
+    case tgfx::inspect::LayerTreeMessage::ImageData: {
       int width = contentMap["width"].AsInt32();
       int height = contentMap["height"].AsInt32();
       auto blob = contentMap["data"].AsBlob();
@@ -280,8 +280,7 @@ void LayerProfilerView::ProcessMessage(const QByteArray& message) {
   }
 }
 
-QByteArray LayerProfilerView::feedBackData(tgfx::debug::LayerInspectorMsgType type,
-                                           uint64_t value) {
+QByteArray LayerProfilerView::feedBackData(tgfx::inspect::LayerTreeMessage type, uint64_t value) {
   flexbuffers::Builder fbb;
   auto mapStart = fbb.StartMap();
   fbb.Key("Type");
@@ -294,13 +293,13 @@ QByteArray LayerProfilerView::feedBackData(tgfx::debug::LayerInspectorMsgType ty
 }
 
 void LayerProfilerView::sendSelectedAddress(uint64_t address) {
-  auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::SelectedLayerAddress, address);
+  auto data = feedBackData(tgfx::inspect::LayerTreeMessage::SelectedLayerAddress, address);
   if (m_WebSocketServer) m_WebSocketServer->SendData(data);
   if (m_TcpSocketClient) m_TcpSocketClient->sendData(data);
 }
 
 void LayerProfilerView::sendSerializeAttributeAddress(uint64_t address) {
-  auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::SerializeAttribute, address);
+  auto data = feedBackData(tgfx::inspect::LayerTreeMessage::SerializeAttribute, address);
   if (m_WebSocketServer) m_WebSocketServer->SendData(data);
   if (m_TcpSocketClient) m_TcpSocketClient->sendData(data);
 }
@@ -318,7 +317,7 @@ void LayerProfilerView::processSelectedLayer(uint64_t address) {
 void LayerProfilerView::processImageFlush(uint64_t imageID) {
   if (!imageProvider->isImageExisted(imageID)) {
     imageProvider->setCurrentImageID(imageID);
-    auto data = feedBackData(tgfx::debug::LayerInspectorMsgType::FlushImage, imageID);
+    auto data = feedBackData(tgfx::inspect::LayerTreeMessage::FlushImage, imageID);
     if (m_WebSocketServer) m_WebSocketServer->SendData(data);
     if (m_TcpSocketClient) m_TcpSocketClient->sendData(data);
   }

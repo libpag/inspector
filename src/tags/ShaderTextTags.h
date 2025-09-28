@@ -15,13 +15,14 @@
 //  and limitations under the license.
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma once
+#include "DataContext.h"
+#include "DecodeStream.h"
 #include "EncodeStream.h"
 #include "TagHeader.h"
-namespace inspector {
-void ReadVertexBufferTag(DecodeStream* stream);
 
-TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas);
-}  // namespace inspector
+namespace inspector {
+void ReadShaderTextTag(DecodeStream* stream);
+
+TagType WriteShaderTextTag(EncodeStream* stream, DataContext* context);
+}

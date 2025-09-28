@@ -17,7 +17,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "AttributeModel.h"
-#include <QRegularExpression>
+#include "FormatFloatToString.h"
 
 namespace inspector {
 AttributeModel::AttributeModel(Worker* worker, ViewData* viewData, QObject* parent)
@@ -46,7 +46,7 @@ bool AttributeModel::getIsTask() const {
     return true;
   }
   const auto& opTask = opTasks[static_cast<uint32_t>(selectOpTask)];
-  return getOpTaskType(static_cast<tgfx::debug::OpTaskType>(opTask->type)) == OpOrTask::Task;
+  return getOpTaskType(static_cast<tgfx::inspect::OpTaskType>(opTask->type)) == OpOrTask::Task;
 }
 
 QList<QObject*> AttributeModel::getSummaryItems() const {
@@ -119,10 +119,10 @@ QVariant AttributeModel::readData(DataType type, std::shared_ptr<tgfx::Data> dat
       uint8_t g = (value >> 8) & 0xFF;
       uint8_t b = (value >> 16) & 0xFF;
       uint8_t a = (value >> 24) & 0xFF;
-      return "(" + getShowFloat(static_cast<float>(r) / 255.f) + ", " +
-             getShowFloat(static_cast<float>(g) / 255.f) + ", " +
-             getShowFloat(static_cast<float>(b) / 255.f) + ", " +
-             getShowFloat(static_cast<float>(a) / 255.f) + ")";
+      return "(" + FormatFloatToString(static_cast<float>(r) / 255.f) + ", " +
+             FormatFloatToString(static_cast<float>(g) / 255.f) + ", " +
+             FormatFloatToString(static_cast<float>(b) / 255.f) + ", " +
+             FormatFloatToString(static_cast<float>(a) / 255.f) + ")";
     }
     case DataType::Vec4: {
       auto size = sizeof(float);
@@ -130,8 +130,8 @@ QVariant AttributeModel::readData(DataType type, std::shared_ptr<tgfx::Data> dat
       auto data1 = dataView.getFloat(size);
       auto data2 = dataView.getFloat(size * 2);
       auto data3 = dataView.getFloat(size * 3);
-      return "(" + getShowFloat(data0) + ", " + getShowFloat(data1) + ", " + getShowFloat(data2) +
-             ", " + getShowFloat(data3) + ")";
+      return "(" + FormatFloatToString(data0) + ", " + FormatFloatToString(data1) + ", " +
+             FormatFloatToString(data2) + ", " + FormatFloatToString(data3) + ")";
     }
     case DataType::Mat4: {
       auto size = sizeof(float);
@@ -141,9 +141,9 @@ QVariant AttributeModel::readData(DataType type, std::shared_ptr<tgfx::Data> dat
       auto data3 = dataView.getFloat(size * 3);
       auto data4 = dataView.getFloat(size * 4);
       auto data5 = dataView.getFloat(size * 5);
-      return "(" + getShowFloat(data0) + ", " + getShowFloat(data1) + ", " + getShowFloat(data2) +
-             ", " + getShowFloat(data3) + ", " + getShowFloat(data4) + ", " + getShowFloat(data5) +
-             ")";
+      return "(" + FormatFloatToString(data0) + ", " + FormatFloatToString(data1) + ", " +
+             FormatFloatToString(data2) + ", " + FormatFloatToString(data3) + ", " +
+             FormatFloatToString(data4) + ", " + FormatFloatToString(data5) + ")";
     }
     case DataType::Int: {
       auto value = dataView.getInt32(0);
@@ -159,13 +159,13 @@ QVariant AttributeModel::readData(DataType type, std::shared_ptr<tgfx::Data> dat
     }
     case DataType::Float: {
       auto value = dataView.getFloat(0);
-      return getShowFloat(value);
+      return FormatFloatToString(value);
     }
     case DataType::Enum: {
       auto typeValue = dataView.getUint16(0);
       uint8_t enumType = (typeValue >> 8) & 0xFF;
       uint8_t enumValue = typeValue & 0xFF;
-      auto enumTypeIter = TGFXEnumName.find((tgfx::debug::CustomEnumType)enumType);
+      auto enumTypeIter = TGFXEnumName.find((tgfx::inspect::CustomEnumType)enumType);
       if (enumTypeIter == TGFXEnumName.end() || enumValue < 0 ||
           static_cast<size_t>(enumValue) >= enumTypeIter->second.size()) {
         return tr("???");
@@ -176,11 +176,5 @@ QVariant AttributeModel::readData(DataType type, std::shared_ptr<tgfx::Data> dat
     default:
       return tr("nullptr(Parsing exception)");
   }
-}
-
-QString AttributeModel::getShowFloat(float data) {
-  static auto regex = QRegularExpression("\\.?0+$");
-  auto strData = QString::number(data, 'f', 2);
-  return strData.remove(regex);
 }
 }  // namespace inspector

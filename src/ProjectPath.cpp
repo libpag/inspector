@@ -35,4 +35,4 @@ std::string ProjectPath::Absolute(const std::string& relativePath) {
   return std::filesystem::path(rootPath + relativePath).lexically_normal();
 }
 
-}  // namespace tgfx
+}  // namespace inspector

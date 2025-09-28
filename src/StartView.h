@@ -170,7 +170,7 @@ class StartView : public QObject {
   std::mutex resolvLock;
   uint16_t port = 8086;
   ResolvService resolv;
-  std::unique_ptr<tgfx::debug::UdpListen> broadcastListen;
+  std::unique_ptr<tgfx::inspect::UDPListen> broadcastListen;
   std::unordered_map<uint64_t, ClientData*> clients;
   std::unordered_map<std::string, std::string> resolvMap;
 

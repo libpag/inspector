@@ -322,12 +322,26 @@ ApplicationWindow {
                     id: textureDock
                     uniqueName: "Texture"
                     source: "qrc:/qml/TextureView.qml"
-                    visible: false
+                }
+
+                KDDW.DockWidget {
+                    id: shaderDock
+                    uniqueName: "Shader"
+                    source: "qrc:/qml/ShaderView.qml"
+                }
+
+                KDDW.DockWidget {
+                    id: meshDock
+                    uniqueName: "Mesh"
+                    source: "qrc:/qml/MeshView.qml"
                 }
 
                 Component.onCompleted: {
                     addDockWidget(attributeDock, KDDW.KDDockWidgets.Location_OnRight, null, Qt.size(1500, 0));
                     attributeDock.addDockWidgetAsTab(textureDock);
+                    attributeDock.addDockWidgetAsTab(shaderDock);
+                    attributeDock.addDockWidgetAsTab(meshDock);
+                    // attributeDock.setAsCurrentTab()
                     addDockWidget(taskDock, KDDW.KDDockWidgets.Location_OnLeft, attributeDock, Qt.size(420, 0));
                 }
             }

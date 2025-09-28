@@ -22,9 +22,9 @@
 #include <QDialog>
 #include <QQmlApplicationEngine>
 #include "LayerAttributeModel.h"
-#include "LayerInspectorProtocol.h"
 #include "LayerTreeModel.h"
 #include "MemoryImageProvider.h"
+#include "Protocol.h"
 #include "flatbuffers/flexbuffers.h"
 #include "socket/TcpSocketClient.h"
 #include "socket/WebSocketServer.h"
@@ -59,7 +59,7 @@ class LayerProfilerView : public QObject {
 
   void ProcessMessage(const QByteArray& message);
 
-  QByteArray feedBackData(tgfx::debug::LayerInspectorMsgType type, uint64_t value);
+  QByteArray feedBackData(tgfx::inspect::LayerTreeMessage type, uint64_t value);
 
   void sendSelectedAddress(uint64_t address);
 

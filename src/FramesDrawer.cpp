@@ -126,8 +126,7 @@ void FramesDrawer::drawFrames(tgfx::Canvas* canvas) {
     if (frameWidth != 1) {
       if (frameCaptured) {
         auto p1 = tgfx::Point{static_cast<float>(i * frameWidth) + 2.f, 1.f};
-        auto p2 =
-            tgfx::Point{(float)frameWidth + i * frameWidth - p1.x, (float)height() - p1.y};
+        auto p2 = tgfx::Point{(float)frameWidth + i * frameWidth - p1.x, (float)height() - p1.y};
         DrawRect(canvas, p1, p2, capturedColor);
       }
       auto p1 = tgfx::Point{2.f + i * frameWidth, (float)height() - 1.f - frameHeight};

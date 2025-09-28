@@ -32,20 +32,22 @@ void ReadFrameTag(DecodeStream* stream) {
   if (frameData.continuous) {
     for (uint64_t j = 0; j < frameDataCount; ++j) {
       auto frame = FrameEvent{};
+      frame.captured = stream->readBoolean();
       frame.start = ReadTimeOffset(stream, refTime);
       frame.end = -1;
       frame.drawCall = stream->readEncodedInt64();
       frame.triangles = stream->readEncodedInt64();
-      frameData.frames.push_back(frame);
+      frameData.frames.push_back(std::move(frame));
     }
   } else {
     for (uint64_t j = 0; j < frameDataCount; ++j) {
       auto frame = FrameEvent{};
+      frame.captured = stream->readBoolean();
       frame.start = ReadTimeOffset(stream, refTime);
       frame.end = ReadTimeOffset(stream, refTime);
       frame.drawCall = stream->readEncodedInt64();
       frame.triangles = stream->readEncodedInt64();
-      frameData.frames.push_back(frame);
+      frameData.frames.push_back(std::move(frame));
     }
   }
 }
@@ -57,12 +59,14 @@ TagType WriteFrameTag(EncodeStream* stream, const FrameData* frameData) {
   stream->writeEncodedUint64(frameData->frames.size());
   if (frameData->continuous) {
     for (const auto& frame : frameData->frames) {
+      stream->writeBoolean(frame.captured);
       WriteTimeOffset(stream, refTime, frame.start);
       stream->writeEncodedInt64(frame.drawCall);
       stream->writeEncodedInt64(frame.triangles);
     }
   } else {
     for (const auto& frame : frameData->frames) {
+      stream->writeBoolean(frame.captured);
       WriteTimeOffset(stream, refTime, frame.start);
       WriteTimeOffset(stream, refTime, frame.end);
       stream->writeEncodedInt64(frame.drawCall);

@@ -21,6 +21,7 @@
 #include "InspectorEvent.h"
 #include "StreamContext.h"
 #include "tgfx/core/Buffer.h"
+#include "tgfx/core/BytesKey.h"
 
 namespace inspector {
 class DataContext : public StreamContext {
@@ -35,6 +36,10 @@ class DataContext : public StreamContext {
   std::unordered_map<uint64_t, std::shared_ptr<ImageTexture>> images = {};
   std::unordered_map<uint32_t, std::shared_ptr<TextureData>> textures = {};
   std::unordered_map<uint32_t, std::shared_ptr<VertexData>> vertexDatas = {};
+  std::unordered_map<uint64_t, std::shared_ptr<MeshData>> meshDatas = {};
+  std::unordered_map<uint32_t, std::vector<UniformValueData>> uniformValues = {};
+  tgfx::BytesKeyMap<ShaderData> shaderData = {};
+  std::unordered_map<uint32_t, tgfx::BytesKey> programKeys = {};
   FrameData* framebase = nullptr;
   uint64_t opTaskCount = 0;
   int64_t baseTime = 0;

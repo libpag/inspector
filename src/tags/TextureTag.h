@@ -17,6 +17,8 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <unordered_map>
+
+#include "DataContext.h"
 #include "DecodeStream.h"
 #include "InspectorEvent.h"
 #include "TagHeader.h"
@@ -24,6 +26,5 @@
 namespace inspector {
 void ReadTextureTag(DecodeStream* stream);
 
-TagType WriteTextureTag(EncodeStream* stream,
-                        std::unordered_map<uint32_t, std::shared_ptr<TextureData>>* textures);
+TagType WriteTextureTag(EncodeStream* stream, DataContext* context);
 }  // namespace inspector

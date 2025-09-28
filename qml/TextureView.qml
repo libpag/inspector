@@ -30,7 +30,7 @@ Item {
                     id: textureDisplayArea
                     SplitView.minimumWidth: parent.width * 0.7
                     SplitView.maximumWidth: parent.width - 50
-                    SplitView.preferredWidth: parent.width * 0.8  // 初始宽度设为父容器的80%
+                    SplitView.preferredWidth: parent.width * 0.8
                     color: "#282828"
 
                     TextureDrawer {

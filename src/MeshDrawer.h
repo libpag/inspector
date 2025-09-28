@@ -2,7 +2,7 @@
 //
 //  Tencent is pleased to support the open source community by making tgfx available.
 //
-//  Copyright (C) 2025 Tencent. All rights reserved.
+//  Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
 //
 //  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 //  in compliance with the License. You may obtain a copy of the License at
@@ -17,28 +17,42 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <QStringList>
-#include <QVector>
-#include <memory>
+#include <QQuickItem>
 #include "AppHost.h"
+#include "IndicesProvider.h"
+#include "MeshDataDivider.h"
 #include "ViewData.h"
 #include "Worker.h"
+#include "tgfx/core/Clock.h"
 #include "tgfx/gpu/opengl/qt/QGLWindow.h"
+
 namespace inspector {
-class TextureListDrawer : public QQuickItem {
+class TestTime {
+ public:
+  explicit TestTime(const char* name) : time(tgfx::Clock::Now()), name(name) {
+  }
+
+  ~TestTime() {
+    auto costTime = tgfx::Clock::Now() - time;
+    LOGI("%s cost time: %lld us", name.c_str(), costTime);
+  }
+
+ private:
+  int64_t time;
+  std::string name;
+};
+
+class MeshDrawer : public QQuickItem {
   Q_OBJECT
-  Q_PROPERTY(int imageLabel READ getImageLabel WRITE setImageLabel)
   Q_PROPERTY(Worker* worker READ getWorker WRITE setWorker)
   Q_PROPERTY(ViewData* viewData READ getViewData WRITE setViewData)
  public:
-  explicit TextureListDrawer(QQuickItem* parent = nullptr);
-
-  ~TextureListDrawer() override = default;
+  MeshDrawer(QQuickItem* parent = nullptr);
+  ~MeshDrawer() override;
 
   Worker* getWorker() const {
     return worker;
   }
-
   void setWorker(Worker* worker) {
     this->worker = worker;
   }
@@ -46,52 +60,33 @@ class TextureListDrawer : public QQuickItem {
   ViewData* getViewData() const {
     return viewData;
   }
-
   void setViewData(ViewData* viewData) {
     this->viewData = viewData;
   }
 
-  Q_SIGNAL void selectedImage(std::shared_ptr<tgfx::Image> image);
+  void clear();
 
-  int getImageLabel() const {
-    return static_cast<int>(lableType);
-  }
-
-  void setImageLabel(int label);
+  Q_SLOT void refreshData();
+  Q_SLOT void selectMeshIndex(int index);
 
  protected:
-  enum class LableType {
-    Input,
-    Output,
-  };
   QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData*) override;
-
-  void mousePressEvent(QMouseEvent* event) override;
-
-  void wheelEvent(QWheelEvent* event) override;
-
-  void geometryChange(const QRectF& newGeometry, const QRectF& oldGeometry) override;
-
-  void updateLayout();
-
-  void updateImageData();
-
-  void addImage(uint64_t texturePtr);
-
-  void draw();
-
-  int itemAtPosition(float y) const;
+  void drawWireFrame(QSGNode* root);
+  void drawSelectTriangle(QSGNode* root);
+  void drawSelectPoint(QSGNode* root);
+  void updateMatrix();
+  void encodeData(const std::shared_ptr<tgfx::Data>& data,
+                  const std::shared_ptr<MeshDataDivider>& meshDataDivider);
 
  private:
   Worker* worker = nullptr;
   ViewData* viewData = nullptr;
-  int selectOpTask = -1;
-  std::vector<tgfx::Rect> squareRects;
-  std::vector<std::shared_ptr<tgfx::Image>> images;
-  bool layoutDirty = true;
-  float scrollOffset = 0.0f;
-  LableType lableType = LableType::Input;
+  int selectIndex = -1;
   std::shared_ptr<tgfx::QGLWindow> tgfxWindow = nullptr;
   std::shared_ptr<AppHost> appHost = nullptr;
+  std::shared_ptr<IndicesProvider> indicesProvider;
+  std::vector<std::array<float, 2>> postionData = {};
+  tgfx::Rect bounds = {};
+  tgfx::Matrix matrix = {};
 };
 }  // namespace inspector

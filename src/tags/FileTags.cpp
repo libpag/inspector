@@ -25,6 +25,7 @@
 #include "NameMapTag.h"
 #include "OpTaskTag.h"
 #include "PropertyTag.h"
+#include "ShaderTextTags.h"
 #include "TextureTag.h"
 #include "VertexBufferTag.h"
 
@@ -35,6 +36,7 @@ static const std::unordered_map<TagType, std::function<ReadTagHandler>, EnumClas
         {TagType::NameMap, ReadNameMapTag}, {TagType::Frame, ReadFrameTag},
         {TagType::OpTask, ReadOpTaskTag},   {TagType::Property, ReadPropertyTag},
         {TagType::Texture, ReadTextureTag}, {TagType::VertexBuffer, ReadVertexBufferTag},
+        {TagType::ShaderAndUniform, ReadShaderTextTag},
 };
 
 void ReadTagsOfFile(DecodeStream* stream, TagType type) {
@@ -55,8 +57,8 @@ void WriteTagsOfFile(EncodeStream* stream) {
   const auto& frames = context->frameData;
   WriteTag(stream, &frames, WriteFrameTag);
 
-  auto& opTasks = context->opTasks;
-  auto& opChilds = context->opChilds;
+  const auto& opTasks = context->opTasks;
+  const auto& opChilds = context->opChilds;
   if (!opTasks.empty() || !opChilds.empty()) {
     WriteTag(stream, context, WriteOpTaskTag);
   }
@@ -67,14 +69,22 @@ void WriteTagsOfFile(EncodeStream* stream) {
   }
 
   auto& textures = context->textures;
-  if (!textures.empty()) {
-    WriteTag(stream, &textures, WriteTextureTag);
+  auto& images = context->images;
+  if (!textures.empty() || !images.empty()) {
+    WriteTag(stream, context, WriteTextureTag);
   }
 
-  auto& vertexBuffer = context->vertexDatas;
-  if (!vertexBuffer.empty()) {
-    WriteTag(stream, &vertexBuffer, WriteVertexBufferTag);
+  auto& meshDatas = context->meshDatas;
+  if (!meshDatas.empty()) {
+    WriteTag(stream, &meshDatas, WriteVertexBufferTag);
   }
+
+  auto& shaderData = context->shaderData;
+  auto& programKeys = context->programKeys;
+  if (!shaderData.empty() || !programKeys.empty()) {
+    WriteTag(stream, context, WriteShaderTextTag);
+  }
+
   WriteEndTag(stream);
 }
 

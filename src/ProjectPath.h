@@ -25,4 +25,4 @@ class ProjectPath {
   static std::string Absolute(const std::string& relativePath);
 };
 
-}  // namespace tgfx
+}  // namespace inspector

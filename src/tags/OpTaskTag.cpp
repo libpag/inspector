@@ -33,6 +33,7 @@ void ReadOpTaskTag(DecodeStream* stream) {
     ptr->start = stream->readEncodedInt64();
     ptr->end = stream->readEncodedInt64();
     ptr->type = stream->readUint8();
+    ptr->ptr = stream->readEncodedUint64();
     ptr->id = i;
     opTasks.push_back(ptr);
   }
@@ -63,6 +64,7 @@ TagType WriteOpTaskTag(EncodeStream* stream, DataContext* context) {
     stream->writeEncodedInt64(opTask->start);
     stream->writeEncodedInt64(opTask->end);
     stream->writeUint8(opTask->type);
+    stream->writeEncodedUint64(opTask->ptr);
   }
 
   const auto& opChilds = context->opChilds;

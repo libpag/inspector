@@ -20,10 +20,13 @@
 
 #include <QMainWindow>
 #include <QQuickWindow>
+#include "MeshModel.h"
 #include "SelectFrameModel.h"
+#include "ShaderTextModel.h"
 #include "StartView.h"
 #include "TaskFilterModel.h"
 #include "TaskTreeModel.h"
+#include "UniformModel.h"
 #include "ViewData.h"
 #include "Worker.h"
 
@@ -64,9 +67,12 @@ class InspectorView : public QObject {
   std::string saveFilePath;
   ClientData* clientData = nullptr;
   std::unique_ptr<QQmlApplicationEngine> ispEngine = nullptr;
-  std::unique_ptr<TaskTreeModel> taskTreeModel;
-  std::unique_ptr<SelectFrameModel> selectFrameModel;
-  std::unique_ptr<TaskFilterModel> taskFilterModel;
-  std::unique_ptr<AttributeModel> attributeModel;
+  std::unique_ptr<TaskTreeModel> taskTreeModel = nullptr;
+  std::unique_ptr<SelectFrameModel> selectFrameModel = nullptr;
+  std::unique_ptr<TaskFilterModel> taskFilterModel = nullptr;
+  std::unique_ptr<AttributeModel> attributeModel = nullptr;
+  std::unique_ptr<ShaderTextModel> shaderTextModel = nullptr;
+  std::unique_ptr<UniformModel> uniformModel = nullptr;
+  std::unique_ptr<MeshModel> meshModel = nullptr;
 };
 }  // namespace inspector

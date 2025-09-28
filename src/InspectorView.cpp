@@ -22,6 +22,7 @@
 #include <QQmlContext>
 #include "AttributeModel.h"
 #include "FramesDrawer.h"
+#include "MeshDrawer.h"
 #include "TaskTreeModel.h"
 #include "TextureDrawer.h"
 #include "TextureListDrawer.h"
@@ -75,12 +76,16 @@ void InspectorView::initView() {
   qmlRegisterType<AttributeModel>("AttributeModel", 1, 0, "AttributeModel");
   qmlRegisterType<TextureDrawer>("TextureDrawer", 1, 0, "TextureDrawer");
   qmlRegisterType<TextureListDrawer>("TextureListDrawer", 1, 0, "TextureListDrawer");
+  qmlRegisterType<MeshDrawer>("MeshDrawer", 1, 0, "MeshDrawer");
   qmlRegisterUncreatableType<KDDockWidgets::QtQuick::Group>(
       "com.kdab.dockwidgets", 2, 0, "GroupView", QStringLiteral("Internal usage only"));
   taskTreeModel = std::make_unique<TaskTreeModel>(&worker, &viewData, this);
   selectFrameModel = std::make_unique<SelectFrameModel>(&worker, &viewData, this);
   attributeModel = std::make_unique<AttributeModel>(&worker, &viewData, this);
   taskFilterModel = std::make_unique<TaskFilterModel>(&viewData, this);
+  shaderTextModel = std::make_unique<ShaderTextModel>(&worker, &viewData, this);
+  uniformModel = std::make_unique<UniformModel>(&worker, &viewData, this);
+  meshModel = std::make_unique<MeshModel>(&worker, &viewData, this);
   ispEngine = std::make_unique<QQmlApplicationEngine>(this);
   ispEngine->rootContext()->setContextProperty("workerPtr", &worker);
   ispEngine->rootContext()->setContextProperty("viewDataPtr", &viewData);
@@ -89,6 +94,9 @@ void InspectorView::initView() {
   ispEngine->rootContext()->setContextProperty("taskFilterModel", taskFilterModel.get());
   ispEngine->rootContext()->setContextProperty("selectFrameModel", selectFrameModel.get());
   ispEngine->rootContext()->setContextProperty("attributeModel", attributeModel.get());
+  ispEngine->rootContext()->setContextProperty("shaderTextModel", shaderTextModel.get());
+  ispEngine->rootContext()->setContextProperty("uniformModel", uniformModel.get());
+  ispEngine->rootContext()->setContextProperty("meshModel", meshModel.get());
   KDDockWidgets::QtQuick::Platform::instance()->setQmlEngine(ispEngine.get());
   ispEngine->load(QUrl("qrc:/qml/InspectorView.qml"));
   if (ispEngine->rootObjects().isEmpty()) {
@@ -117,6 +125,7 @@ void InspectorView::initConnect() {
     return;
   }
   auto frameDrawer = inspectorWindow->findChild<FramesDrawer*>("framesDrawer");
+  auto meshDrawer = inspectorWindow->findChild<MeshDrawer*>("meshDrawer");
   connect(frameDrawer, &FramesDrawer::selectFrame, taskTreeModel.get(),
           &TaskTreeModel::refreshData);
   connect(frameDrawer, &FramesDrawer::selectFrame, selectFrameModel.get(),
@@ -127,6 +136,14 @@ void InspectorView::initConnect() {
           &TaskTreeModel::refreshData);
   connect(taskTreeModel.get(), &TaskTreeModel::selectTaskOp, attributeModel.get(),
           &AttributeModel::refreshData);
+  connect(taskTreeModel.get(), &TaskTreeModel::selectTaskOp, shaderTextModel.get(),
+          &ShaderTextModel::refreshShaderText);
+  connect(taskTreeModel.get(), &TaskTreeModel::selectTaskOp, uniformModel.get(),
+          &UniformModel::refreshData);
+  connect(taskTreeModel.get(), &TaskTreeModel::selectTaskOp, meshModel.get(),
+          &MeshModel::refreshData);
+  connect(taskTreeModel.get(), &TaskTreeModel::selectTaskOp, meshDrawer, &MeshDrawer::refreshData);
+  connect(meshModel.get(), &MeshModel::selectMeshIndex, meshDrawer, &MeshDrawer::selectMeshIndex);
   connect(this, &InspectorView::closeView, dynamic_cast<StartView*>(parent()),
           &StartView::onCloseView);
 }

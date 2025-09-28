@@ -20,24 +20,25 @@
 
 namespace inspector {
 
-OpOrTask getOpTaskType(tgfx::debug::OpTaskType type) {
+OpOrTask getOpTaskType(tgfx::inspect::OpTaskType type) {
   switch (type) {
-    case tgfx::debug::OpTaskType::TextureUploadTask:
-    case tgfx::debug::OpTaskType::ShapeBufferUploadTask:
-    case tgfx::debug::OpTaskType::GpuUploadTask:
-    case tgfx::debug::OpTaskType::TextureCreateTask:
-    case tgfx::debug::OpTaskType::RenderTargetCreateTask:
-    case tgfx::debug::OpTaskType::TextureFlattenTask:
-    case tgfx::debug::OpTaskType::RenderTargetCopyTask:
-    case tgfx::debug::OpTaskType::RuntimeDrawTask:
-    case tgfx::debug::OpTaskType::TextureResolveTask:
+    case tgfx::inspect::OpTaskType::TextureUploadTask:
+    case tgfx::inspect::OpTaskType::ShapeBufferUploadTask:
+    case tgfx::inspect::OpTaskType::GpuUploadTask:
+    case tgfx::inspect::OpTaskType::TextureCreateTask:
+    case tgfx::inspect::OpTaskType::RenderTargetCreateTask:
+    case tgfx::inspect::OpTaskType::TextureFlattenTask:
+    case tgfx::inspect::OpTaskType::RenderTargetCopyTask:
+    case tgfx::inspect::OpTaskType::RuntimeDrawTask:
+    case tgfx::inspect::OpTaskType::TextureResolveTask:
       return OpOrTask::Task;
-    case tgfx::debug::OpTaskType::ClearOp:
-    case tgfx::debug::OpTaskType::RectDrawOp:
-    case tgfx::debug::OpTaskType::RRectDrawOp:
-    case tgfx::debug::OpTaskType::ShapeDrawOp:
-    case tgfx::debug::OpTaskType::DstTextureCopyOp:
-    case tgfx::debug::OpTaskType::ResolveOp:
+    case tgfx::inspect::OpTaskType::ClearOp:
+    case tgfx::inspect::OpTaskType::RectDrawOp:
+    case tgfx::inspect::OpTaskType::RRectDrawOp:
+    case tgfx::inspect::OpTaskType::ShapeDrawOp:
+    case tgfx::inspect::OpTaskType::AtlasTextOp:
+    case tgfx::inspect::OpTaskType::DstTextureCopyOp:
+    case tgfx::inspect::OpTaskType::ResolveOp:
       return OpOrTask::Op;
     default:
       return OpOrTask::NoType;

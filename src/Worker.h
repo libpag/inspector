@@ -23,8 +23,9 @@
 #include <thread>
 #include "DataContext.h"
 #include "DecodeStream.h"
+#include "FrameCaptureMessage.h"
 #include "LZ4CompressionHandler.h"
-#include "Message.h"
+#include "LZ4DecompressionHandler.h"
 #include "Protocol.h"
 #include "Socket.h"
 
@@ -66,27 +67,35 @@ class Worker : public QObject {
   void netWork();
 
   void newOpTask(std::shared_ptr<OpTaskData> opTask);
-  void query(tgfx::debug::ServerQuery type, uint64_t data, uint32_t extra = 0);
+  void query(tgfx::inspect::ServerQuery type, uint64_t data, uint32_t extra = 0);
   void queryTerminate();
-  bool dispatchProcess(const tgfx::debug::MsgItem& ev, const char*& ptr);
-  bool process(const tgfx::debug::MsgItem& ev);
-  void processOperateBegin(const tgfx::debug::OperateBeginMsg& ev);
-  void processOperateEnd(const tgfx::debug::OperateEndMsg& ev);
+  bool dispatchProcess(const tgfx::inspect::FrameCaptureMessageItem& ev, const char*& ptr);
+  bool process(const tgfx::inspect::FrameCaptureMessageItem& ev);
+  void processOperateBegin(const tgfx::inspect::OperateBeginMessage& ev);
+  void processOperateEnd(const tgfx::inspect::OperateEndMessage& ev);
+  void processOperatePtr(const tgfx::inspect::DrawOpPtrMessage& ev);
   void processAttributeImpl(DataHead& head, std::shared_ptr<tgfx::Data> data);
-  void processFloatValue(const tgfx::debug::AttributeDataFloatMsg& ev);
-  void processFloat4Value(const tgfx::debug::AttributeDataFloat4Msg& ev);
-  void processIntValue(const tgfx::debug::AttributeDataIntMsg& ev);
-  void processBoolValue(const tgfx::debug::AttributeDataBoolMsg& ev);
-  void processMat4Value(const tgfx::debug::AttributeDataMat4Msg& ev);
-  void processEnumValue(const tgfx::debug::AttributeDataEnumMsg& ev);
-  void processUint32Value(const tgfx::debug::AttributeDataUInt32Msg& ev);
-  void processColorValue(const tgfx::debug::AttributeDataUInt32Msg& ev);
-  void processFrameMark(const tgfx::debug::FrameMarkMsg& ev);
-  void processTextureData(const tgfx::debug::TextureDataMsg& ev);
-  void processTexture(const tgfx::debug::TextureSamplerMsg& ev, bool isInput);
+  void processFloatValue(const tgfx::inspect::AttributeDataFloatMessage& ev);
+  void processFloat4Value(const tgfx::inspect::AttributeDataFloat4Message& ev);
+  void processIntValue(const tgfx::inspect::AttributeDataIntMessage& ev);
+  void processBoolValue(const tgfx::inspect::AttributeDataBoolMessage& ev);
+  void processMat4Value(const tgfx::inspect::AttributeDataMat4Message& ev);
+  void processEnumValue(const tgfx::inspect::AttributeDataEnumMessage& ev);
+  void processUint32Value(const tgfx::inspect::AttributeDataUInt32Message& ev);
+  void processColorValue(const tgfx::inspect::AttributeDataUInt32Message& ev);
+  void processFrameMark(const tgfx::inspect::FrameMarkMessage& ev);
+  void processTextureData(const tgfx::inspect::TextureDataMessage& ev);
+  void processTexture(const tgfx::inspect::TextureSamplerMessage& ev, bool isInput);
 
-  void handleValueName(uint64_t name, const char* str, size_t sz);
-  void addTextureData(const char* data, size_t sz);
+  void handleValueName(uint64_t name, const char* str, size_t size);
+  void addTextureData(const char* data, size_t size);
+  void addProgramKey(const char* data, size_t size);
+  void addShaderText(std::string shaderCode, size_t index);
+  void addVertexShaderText(const char* data, size_t size);
+  void addFragmentShaderText(const char* data, size_t size);
+  void addUniformInfo(const char*& data, size_t size);
+  void addUniformValue(const char*& data, size_t size);
+  void addMeshdata(const char*& data, size_t size);
 
   int64_t tscTime(int64_t tsc) const {
     return int64_t(tsc - dataContext.baseTime);
@@ -96,11 +105,11 @@ class Worker : public QObject {
   }
 
  private:
-  tgfx::debug::Socket sock = {};
+  tgfx::inspect::Socket sock = {};
   std::string addr = {};
   uint16_t port = 0;
 
-  std::unique_ptr<tgfx::debug::LZ4CompressionHandler> lz4Handler = nullptr;
+  std::unique_ptr<LZ4DecompressionHandler> lz4Handler = nullptr;
   char* dataBuffer = nullptr;
   int bufferOffset = 0;
 
@@ -124,15 +133,16 @@ class Worker : public QObject {
   std::mutex netWriteLock = {};
   std::condition_variable netWriteCv = {};
 
-  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueue = {};
-  std::vector<tgfx::debug::ServerQueryPacket> serverQueryQueuePrio = {};
+  std::vector<tgfx::inspect::ServerQueryPacket> serverQueryQueue = {};
+  std::vector<tgfx::inspect::ServerQueryPacket> serverQueryQueuePrio = {};
   // Control the rate at which query requests are sent to the server to avoid
   // excessive server pressure caused by sending too many requests
   size_t serverQuerySpaceLeft = 0;
   size_t serverQuerySpaceBase = 0;
 
-  int64_t refTime = 0;
+  int64_t refTime = -1;
   std::shared_ptr<tgfx::Data> penddingTextureData = nullptr;
+  tgfx::BytesKey penddingByteKey = {};
 };
 
 }  // namespace inspector

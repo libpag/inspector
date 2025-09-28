@@ -58,7 +58,12 @@ Item {
                     height: parent.height
                     visible: summarySection.summaryExpanded
                     clip: true
-                    model: attributeModel.summaryItems
+                    model: {
+                        if (attributeModel === null) {
+                            return []
+                        }
+                        return attributeModel.summaryItems
+                    }
 
                     delegate: Rectangle {
                         width: ListView.view.width
@@ -110,7 +115,12 @@ Item {
 
         Column {
             id: processesSection
-            visible: !attributeModel.isTask
+            visible: {
+                if (attributeModel === null) {
+                    return false
+                }
+                return !attributeModel.isTask
+            }
             SplitView.preferredHeight: 400
 
             property bool processesExpanded: true
@@ -135,59 +145,6 @@ Item {
                 width: parent.width
                 height: 200
                 color: "#535353"
-                // ListView {
-                //     id: processesList
-                //     width: parent.width
-                //     height: parent.height
-                //     visible: processesSection.processesExpanded
-                //     clip: true
-                //     model: attributeModel.
-                //
-                //     delegate: Rectangle {
-                //         width: ListView.view.width
-                //         height: 32
-                //         color: "#535353"
-                //
-                //         Row {
-                //             anchors.fill: parent
-                //             anchors.leftMargin: 10
-                //             anchors.rightMargin: 10
-                //             spacing: 10
-                //
-                //             Text {
-                //                 width: parent.width * 0.2
-                //                 height: parent.height
-                //                 leftPadding: 20
-                //                 verticalAlignment: Text.AlignVCenter
-                //                 text: model.key
-                //                 color: "#dddddd"
-                //                 font.pixelSize: 14
-                //                 elide: Text.ElideRight
-                //             }
-                //
-                //             Text {
-                //                 width: parent.width * 0.3
-                //                 height: parent.height
-                //                 verticalAlignment: Text.AlignVCenter
-                //                 text: model.value
-                //                 color: "#dddddd"
-                //                 font.pixelSize: 14
-                //                 elide: Text.ElideRight
-                //             }
-                //         }
-                //
-                //         MouseArea {
-                //             anchors.fill: parent
-                //             hoverEnabled: true
-                //             onEntered: parent.color = "#636363"
-                //             onExited: parent.color = "#535353"
-                //         }
-                //     }
-                //
-                //     ScrollBar.vertical: ScrollBar {
-                //         active: true
-                //     }
-                // }
             }
         }
     }

@@ -112,7 +112,7 @@ void StartView::clearRecentFiles() {
 QVector<QObject*> StartView::getFrameCaptureClientItems() const {
   QVector<QObject*> clientDatas;
   for (auto& client : clients) {
-    if (client.second->type == static_cast<uint8_t>(tgfx::debug::ToolType::FrameCapture)) {
+    if (client.second->type == static_cast<uint8_t>(tgfx::inspect::ToolType::FrameCapture)) {
       clientDatas.push_back(client.second);
     }
   }
@@ -122,7 +122,7 @@ QVector<QObject*> StartView::getFrameCaptureClientItems() const {
 QVector<QObject*> StartView::getLayerTreeClientItems() const {
   QVector<QObject*> clientDatas;
   for (auto& client : clients) {
-    if (client.second->type == static_cast<uint8_t>(tgfx::debug::ToolType::LayerTree)) {
+    if (client.second->type == static_cast<uint8_t>(tgfx::inspect::ToolType::LayerTree)) {
       clientDatas.push_back(client.second);
     }
   }
@@ -223,8 +223,8 @@ void StartView::updateBroadcastClients() {
                         .count();
   if (!broadcastListen) {
     bool isListen = false;
-    broadcastListen = std::make_unique<tgfx::debug::UdpListen>();
-    for (uint16_t i = 0; i < tgfx::debug::BroadcastNum; i++) {
+    broadcastListen = std::make_unique<tgfx::inspect::UDPListen>();
+    for (uint16_t i = 0; i < tgfx::inspect::BroadcastCount; i++) {
       isListen = broadcastListen->listenSock(port + i);
       if (isListen) {
         break;
@@ -234,20 +234,20 @@ void StartView::updateBroadcastClients() {
       broadcastListen.reset();
     }
   } else {
-    tgfx::debug::IpAddress addr;
+    tgfx::inspect::IpAddress addr;
     size_t len;
     for (;;) {
       auto msg = broadcastListen->readData(len, addr, 0);
       if (!msg) {
         break;
       }
-      if (len > sizeof(tgfx::debug::BroadcastMessage)) {
+      if (len > sizeof(tgfx::inspect::BroadcastMessage)) {
         continue;
       }
-      tgfx::debug::BroadcastMessage bm = {};
+      tgfx::inspect::BroadcastMessage bm = {};
       memcpy(&bm, msg, len);
       auto protoVer = bm.protocolVersion;
-      char procname[tgfx::debug::WelcomeMessageProgramNameSize];
+      char procname[tgfx::inspect::WelcomeMessageProgramNameSize];
       strcpy(procname, bm.programName);
       auto activeTime = bm.activeTime;
       auto listenPort = bm.listenPort;

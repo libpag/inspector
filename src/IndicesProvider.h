@@ -17,11 +17,21 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "EncodeStream.h"
-#include "TagHeader.h"
-namespace inspector {
-void ReadVertexBufferTag(DecodeStream* stream);
+#include <memory>
+#include <vector>
+#include "Protocol.h"
 
-TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas);
+namespace inspector {
+class IndicesProvider {
+ public:
+  static std::shared_ptr<IndicesProvider> MakeFrom(
+      tgfx::inspect::OpTaskType opTaskType, tgfx::inspect::VertexProviderType type,
+      const std::shared_ptr<tgfx::inspect::MeshInfo>& meshInfo);
+
+  virtual ~IndicesProvider() = default;
+
+  virtual std::vector<uint16_t> indices() {
+    return {};
+  }
+};
 }  // namespace inspector

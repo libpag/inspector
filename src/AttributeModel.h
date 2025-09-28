@@ -84,13 +84,10 @@ class AttributeModel : public QObject {
   Q_INVOKABLE QList<QObject*> getCoverageProcessItems() const;
 
   Q_SLOT void refreshData();
-
-  Q_SIGNAL void opSelectedChanged();
   Q_SIGNAL void itemsChanged();
 
  protected:
   QVariant readData(DataType type, std::shared_ptr<tgfx::Data> data);
-  QString getShowFloat(float data);
 
  private:
   Worker* worker = nullptr;

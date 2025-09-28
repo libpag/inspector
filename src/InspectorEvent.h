@@ -42,7 +42,6 @@ struct FrameEvent {
   int64_t end = -1;
   int64_t drawCall = 0;
   int64_t triangles = 0;
-  int32_t frameImage = 0;
 };
 
 struct FrameData {
@@ -54,32 +53,35 @@ struct OpTaskData {
   int64_t start = 0;
   int64_t end = 0;
   uint32_t id = 0;
-  uint8_t type = static_cast<uint8_t>(tgfx::debug::OpTaskType::Unknown);
+  uint8_t type = static_cast<uint8_t>(tgfx::inspect::OpTaskType::Unknown);
+  uint64_t ptr = 0;
 };
 
 static std::unordered_map<uint8_t, const char*> OpTaskName = {
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::Unknown), "Unknown"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::Flush), "Flush"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::ResourceTask), "ResourceTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureUploadTask), "TextureUploadTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::ShapeBufferUploadTask), "ShapeBufferUploadTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::GpuUploadTask), "GpuUploadTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureCreateTask), "TextureCreateTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTargetCreateTask),
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::Unknown), "Unknown"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::Flush), "Flush"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::ResourceTask), "ResourceTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::TextureUploadTask), "TextureUploadTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::ShapeBufferUploadTask),
+     "ShapeBufferUploadTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::GpuUploadTask), "GpuUploadTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::TextureCreateTask), "TextureCreateTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RenderTargetCreateTask),
      "RenderTargetCreateTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureFlattenTask), "TextureFlattenTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTask), "RenderTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RenderTargetCopyTask), "RenderTargetCopyTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RuntimeDrawTask), "RuntimeDrawTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::TextureResolveTask), "TextureResolveTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::OpsRenderTask), "OpsRenderTask"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::ClearOp), "ClearOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RectDrawOp), "RectDrawOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::RRectDrawOp), "RRectDrawOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::ShapeDrawOp), "ShapeDrawOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::DstTextureCopyOp), "DstTextureCopyOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::ResolveOp), "ResolveOp"},
-    {static_cast<uint8_t>(tgfx::debug::OpTaskType::OpTaskTypeSize), "OpTaskTypeSize"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::TextureFlattenTask), "TextureFlattenTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RenderTask), "RenderTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RenderTargetCopyTask), "RenderTargetCopyTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RuntimeDrawTask), "RuntimeDrawTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::TextureResolveTask), "TextureResolveTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::OpsRenderTask), "OpsRenderTask"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::ClearOp), "ClearOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RectDrawOp), "RectDrawOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::RRectDrawOp), "RRectDrawOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::ShapeDrawOp), "ShapeDrawOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::AtlasTextOp), "AtlasTextOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::DstTextureCopyOp), "DstTextureCopyOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::ResolveOp), "ResolveOp"},
+    {static_cast<uint8_t>(tgfx::inspect::OpTaskType::OpTaskTypeSize), "OpTaskTypeSize"},
 };
 
 static std::unordered_map<tgfx::PixelFormat, const char*> PixelFormatName = {
@@ -91,39 +93,39 @@ static std::unordered_map<tgfx::PixelFormat, const char*> PixelFormatName = {
 enum class DataType : uint8_t { Color, Vec4, Mat4, Int, Uint32, Bool, Float, Enum, String, Count };
 enum class OpOrTask : uint8_t { Op, Task, NoType };
 
-static std::unordered_map<tgfx::debug::CustomEnumType, std::vector<std::string>> TGFXEnumName = {
-    {tgfx::debug::CustomEnumType::BufferType, {"Index", "Vertex"}},
-    {tgfx::debug::CustomEnumType::BlendMode,
+static std::unordered_map<tgfx::inspect::CustomEnumType, std::vector<std::string>> TGFXEnumName = {
+    {tgfx::inspect::CustomEnumType::BufferType, {"Index", "Vertex"}},
+    {tgfx::inspect::CustomEnumType::BlendMode,
      {"Clear",       "Src",       "Dst",        "SrcOver",   "DstOver",    "SrcIn",
       "DstIn",       "SrcOut",    "DstOut",     "SrcTop",    "DstTop",     "Xor",
       "PlusLighter", "Modulate",  "Screen",     "OverLay",   "Darken",     "Lighten",
       "ColorDodge",  "ColorBurn", "HardLight",  "SoftLight", "Difference", "Exclusion",
       "Multiply",    "Hue",       "Saturation", "Color",     "Luminosity", "PlusDarker"}},
-    {tgfx::debug::CustomEnumType::AAType, {"None", "Coverage", "MSAA"}},
-    {tgfx::debug::CustomEnumType::PixelFormat,
+    {tgfx::inspect::CustomEnumType::AAType, {"None", "Coverage", "MSAA"}},
+    {tgfx::inspect::CustomEnumType::PixelFormat,
      {"Unknown", "ALPHA_8", "GRAY_8", "RG_88", "RGBA_8888", "BGRA_8888"}},
-    {tgfx::debug::CustomEnumType::ImageOrigin, {"TopLeft", "BottomLeft"}},
+    {tgfx::inspect::CustomEnumType::ImageOrigin, {"TopLeft", "BottomLeft"}},
 };
 
 struct DataHead {
-  DataType type;
-  uint64_t name;
+  DataType type = DataType::Color;
+  uint64_t name = 0;
 };
 
 struct PropertyData {
-  std::vector<DataHead> summaryName;
-  std::vector<DataHead> processName;
-  std::vector<std::shared_ptr<tgfx::Data>> summaryData;
-  std::vector<std::shared_ptr<tgfx::Data>> processData;
+  std::vector<DataHead> summaryName = {};
+  std::vector<DataHead> processName = {};
+  std::vector<std::shared_ptr<tgfx::Data>> summaryData = {};
+  std::vector<std::shared_ptr<tgfx::Data>> processData = {};
 };
 
 struct ImageTexture {
-  bool isInput;
-  uint8_t format;
-  int width;
-  int height;
-  size_t rowBytes;
-  std::shared_ptr<tgfx::Data> data;
+  bool isInput = false;
+  tgfx::PixelFormat format = tgfx::PixelFormat::Unknown;
+  int width = 0;
+  int height = 0;
+  size_t rowBytes = 0;
+  std::shared_ptr<tgfx::Data> data = nullptr;
 };
 
 struct TextureData {
@@ -131,11 +133,44 @@ struct TextureData {
   uint64_t outputTexture = 0;
 };
 
-struct VertexData {
-  std::vector<float> vertexData;
-  bool hasUV;
-  bool hasColor;
+enum class UniformFormat {
+  Float,                   // 32-bit floating point scalar.
+  Float2,                  // 2-component vector of 32-bit floating point values.
+  Float3,                  // 3-component vector of 32-bit floating point values.
+  Float4,                  // 4-component vector of 32-bit floating point values.
+  Float2x2,                // 2x2 matrix of 32-bit floating point values.
+  Float3x3,                // 3x3 matrix of 32-bit floating point values.
+  Float4x4,                // 4x4 matrix of 32-bit floating point values.
+  Int,                     // 32-bit signed integer scalar.
+  Int2,                    // 2-component vector of 32-bit signed integer values.
+  Int3,                    // 3-component vector of 32-bit signed integer values.
+  Int4,                    // 4-component vector of 32-bit signed integer values.
+  Texture2DSampler,        // 2D texture sampler.
+  TextureExternalSampler,  // External texture sampler (e.g. for camera input).
+  Texture2DRectSampler,    // Rectangle texture sampler.
 };
 
-OpOrTask getOpTaskType(tgfx::debug::OpTaskType type);
+struct ShaderData {
+  std::array<std::string, 2> shaderText = {};
+  std::unordered_map<std::string, UniformFormat> uniforms = {};
+};
+
+struct UniformValueData {
+  std::string name = {};
+  std::shared_ptr<tgfx::Data> value = nullptr;
+};
+
+struct MeshData {
+  tgfx::inspect::VertexProviderType type = tgfx::inspect::VertexProviderType::RectsVertexProvider;
+  std::shared_ptr<tgfx::inspect::MeshInfo> info = nullptr;
+  std::shared_ptr<tgfx::Data> vertexData = nullptr;
+};
+
+struct VertexData {
+  std::vector<float> vertexData = {};
+  bool hasUV = false;
+  bool hasColor = false;
+};
+
+OpOrTask getOpTaskType(tgfx::inspect::OpTaskType type);
 }  // namespace inspector

@@ -17,11 +17,29 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "EncodeStream.h"
-#include "TagHeader.h"
-namespace inspector {
-void ReadVertexBufferTag(DecodeStream* stream);
 
-TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas);
+#include <QObject>
+#include "ViewData.h"
+#include "Worker.h"
+
+namespace inspector {
+class ShaderTextModel : public QObject {
+  Q_OBJECT
+  Q_PROPERTY(QString vertexShaderText READ vertexShaderText NOTIFY updateShaderText)
+  Q_PROPERTY(QString fragmentShaderText READ fragmentShaderText NOTIFY updateShaderText)
+ public:
+  ShaderTextModel(Worker* worker, ViewData* viewData, QObject* parent = nullptr);
+  ~ShaderTextModel() override;
+
+  QString shaderText(size_t index);
+  QString vertexShaderText();
+  QString fragmentShaderText();
+
+  Q_SLOT void refreshShaderText();
+  Q_SIGNAL void updateShaderText();
+
+ private:
+  Worker* worker = nullptr;
+  ViewData* viewData = nullptr;
+};
 }  // namespace inspector
