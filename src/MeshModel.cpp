@@ -131,8 +131,7 @@ void MeshModel::refreshItems(const std::shared_ptr<tgfx::Data>& data,
     for (auto& item : meshItems) {
       items.push_back(item);
     }
-  }
-  else {
+  } else {
     items.reserve(meshItems.size() + 2);
     vertex.reserve(static_cast<qsizetype>(indices.size()));
     index.reserve(static_cast<qsizetype>(indices.size()));

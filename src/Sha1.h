@@ -2,7 +2,7 @@
 //
 //  Tencent is pleased to support the open source community by making tgfx available.
 //
-//  Copyright (C) 2025 Tencent. All rights reserved.
+//  Copyright (C) 2025 THL A29 Limited, a Tencent company. All rights reserved.
 //
 //  Licensed under the BSD 3-Clause License (the "License"); you may not use this file except
 //  in compliance with the License. You may obtain a copy of the License at
@@ -17,18 +17,25 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <memory>
+
+#include <cstdint>
 
 namespace inspector {
-class LZ4DecompressionHandler {
- public:
-  static std::unique_ptr<LZ4DecompressionHandler> Make();
 
-  static size_t GetMaxOutputSize(size_t inputSize);
+typedef struct {
+  uint32_t state[5];
+  uint32_t count[2];
+  unsigned char buffer[64];
+} SHA1_CTX;
 
-  virtual ~LZ4DecompressionHandler() = default;
+void SHA1Transform(uint32_t state[5], const unsigned char buffer[64]);
 
-  virtual size_t decode(uint8_t* dstBuffer, size_t dstSize, const uint8_t* srcBuffer,
-                        size_t srcSize) const = 0;
-};
+void SHA1Init(SHA1_CTX* context);
+
+void SHA1Update(SHA1_CTX* context, const unsigned char* data, uint32_t len);
+
+void SHA1Final(unsigned char digest[20], SHA1_CTX* context);
+
+void SHA1(char* hash_out, const char* str, int len);
+
 }  // namespace inspector

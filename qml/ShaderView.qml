@@ -72,7 +72,7 @@ Item {
                     anchors.left: parent.left
                     anchors.leftMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                     color: "#DDDDDD"
                     text: "Uniform"
                 }

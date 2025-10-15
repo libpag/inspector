@@ -25,6 +25,7 @@
 #include "FileTags.h"
 #include "Protocol.h"
 #include "TagHeader.h"
+#include "WSSession.h"
 #include "lz4.h"
 #include "tgfx/core/Data.h"
 #include "tgfx/core/ImageCodec.h"
@@ -49,6 +50,13 @@ tgfx::ColorType PixelFormatToColorType(tgfx::PixelFormat format) {
 
 static bool IsQueryPrio(tgfx::inspect::ServerQuery type) {
   return type < tgfx::inspect::ServerQuery::Disconnect;
+}
+
+Worker::Worker(uint16_t webPort)
+    : addr("ws:/"), port(webPort), lz4Handler(LZ4DecompressionHandler::Make()),
+      dataBuffer(new char[MaxDecodeBufferSize]) {
+  workThread = std::thread([this] { execWeb(); });
+  netThread = std::thread([this] { webWork(); });
 }
 
 Worker::Worker(const char* addr, uint16_t port)
@@ -134,8 +142,13 @@ DecodeStream Worker::readBodyBytes(DecodeStream* stream) {
 }
 
 void Worker::queryCaptureFrame() {
-  tgfx::inspect::ServerQueryPacket query{tgfx::inspect::ServerQuery::CaptureFrame, 0, 10};
-  sock.sendData(&query, ServerQueryPacketSize);
+  tgfx::inspect::ServerQueryPacket query{tgfx::inspect::ServerQuery::CaptureFrame, 0, 1};
+  if (sock.isValid()) {
+    sock.sendData(&query, ServerQueryPacketSize);
+  }
+  else {
+    WSSendMessage(webSock.get(), &query, ServerQueryPacketSize);
+  }
 }
 
 int64_t Worker::getFrameTime(const FrameData& fd, size_t idx) const {
@@ -220,14 +233,14 @@ void Worker::exec() {
   sock.sendData(tgfx::inspect::HandshakeShibboleth, tgfx::inspect::HandshakeShibbolethSize);
   uint32_t protocolVersion = tgfx::inspect::ProtocolVersion;
   sock.sendData(&protocolVersion, sizeof(protocolVersion));
-  tgfx::inspect::HandshakeStatus handshake;
-  if (!sock.readData(&handshake, sizeof(handshake), 10, ShouldExit)) {
-    this->handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
-                          std::memory_order_relaxed);
+  tgfx::inspect::HandshakeStatus handshakeStatus;
+  if (!sock.readData(&handshakeStatus, sizeof(handshakeStatus), 10, ShouldExit)) {
+    handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
+                    std::memory_order_relaxed);
     CLOSE_EXEC;
   }
-  this->handshake.store(static_cast<uint8_t>(handshake), std::memory_order_relaxed);
-  switch (handshake) {
+  handshake.store(static_cast<uint8_t>(handshakeStatus), std::memory_order_relaxed);
+  switch (handshakeStatus) {
     case tgfx::inspect::HandshakeStatus::HandshakeWelcome:
       break;
     case tgfx::inspect::HandshakeStatus::HandshakeProtocolMismatch:
@@ -239,8 +252,8 @@ void Worker::exec() {
   {
     tgfx::inspect::WelcomeMessage welcome{};
     if (!sock.readData(&welcome, sizeof(welcome), 10, ShouldExit)) {
-      this->handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
-                            std::memory_order_relaxed);
+      handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
+                      std::memory_order_relaxed);
       CLOSE_EXEC;
     }
     dataContext.baseTime = welcome.initBegin;
@@ -383,6 +396,221 @@ void Worker::netWork() {
   }
 }
 
+#define CLOSE_WEB_EXEC                                 \
+  shutdown();                                          \
+  webSock->socketClose();                               \
+  netWriteCv.notify_one();                             \
+  isConnected.store(false, std::memory_order_relaxed); \
+  return;
+
+void Worker::execWeb() {
+  tgfx::inspect::ListenSocket listen = {};
+  if (!listen.listenSock(port, 4)) {
+    CLOSE_WEB_EXEC;
+  }
+  while (true) {
+    if (isShutDown.load(std::memory_order_relaxed)) {
+      return;
+    }
+    webSock = listen.acceptSock();
+    if (webSock) {
+      break;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  if (!webSocketHandshake()) {
+    handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
+                    std::memory_order_relaxed);
+    CLOSE_WEB_EXEC;
+  }
+
+  uint32_t protocolVersion = tgfx::inspect::ProtocolVersion;
+  WSSendMessage(webSock.get(), tgfx::inspect::HandshakeShibboleth,
+                tgfx::inspect::HandshakeShibbolethSize);
+  WSSendMessage(webSock.get(), &protocolVersion, sizeof(protocolVersion));
+  tgfx::inspect::HandshakeStatus handshakeStatus = tgfx::inspect::HandshakeStatus::HandshakePending;
+  tgfx::Buffer handshakeStatusData = {};
+  if (!WSRecvMessage(webSock.get(), handshakeStatusData, 10)) {
+    handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
+                    std::memory_order_relaxed);
+    CLOSE_WEB_EXEC;
+  }
+  memcpy(&handshakeStatus, handshakeStatusData.bytes(), sizeof(handshakeStatus));
+  handshake.store(static_cast<uint8_t>(handshakeStatus), std::memory_order_relaxed);
+  switch (handshakeStatus) {
+    case tgfx::inspect::HandshakeStatus::HandshakeWelcome:
+      break;
+    default:
+      CLOSE_WEB_EXEC;
+  }
+
+  {
+    tgfx::inspect::WelcomeMessage welcome = {};
+    tgfx::Buffer welcomeData = {};
+    if (!WSRecvMessage(webSock.get(), welcomeData, 10)) {
+      handshake.store(static_cast<uint8_t>(tgfx::inspect::HandshakeStatus::HandshakeDropped),
+                      std::memory_order_relaxed);
+      CLOSE_WEB_EXEC;
+    }
+    memcpy(&welcome, welcomeData.bytes(), sizeof(welcome));
+    const auto initEnd = tscTime(welcome.initEnd);
+    dataContext.baseTime = welcome.initBegin;
+    dataContext.frameData.frames.push_back(FrameEvent{false, 0, -1, 0, 0});
+    dataContext.frameData.frames.push_back(FrameEvent{false, initEnd, -1, 0, 0});
+    dataContext.lastTime = initEnd;
+    refTime = welcome.refTime;
+  }
+  // leave space for terminate request
+  serverQuerySpaceLeft = serverQuerySpaceBase = size_t(
+      std::min(webSock->getSendBufferSize() / static_cast<int>(ServerQueryPacketSize), 8 * 1024) -
+      4);
+  hasData.store(true, std::memory_order_release);
+
+  isConnected.store(true, std::memory_order_relaxed);
+  {
+    std::lock_guard<std::mutex> lock(netWriteLock);
+    netWriteCnt = 2;
+    netWriteCv.notify_one();
+  }
+
+  while (true) {
+    if (isShutDown.load(std::memory_order_relaxed)) {
+      queryTerminate();
+      CLOSE_WEB_EXEC;
+    }
+
+    NetBuffer netbuf = {};
+    {
+      std::unique_lock<std::mutex> lock(netReadLock);
+      netReadCv.wait(lock, [this] { return !netRead.empty(); });
+      netbuf = netRead.front();
+      netRead.erase(netRead.begin());
+    }
+
+    if (netbuf.bufferOffset < 0) {
+      CLOSE_WEB_EXEC;
+    }
+
+    const char* ptr = dataBuffer + netbuf.bufferOffset;
+    const char* end = ptr + netbuf.size;
+
+    {
+      std::lock_guard<std::mutex> lock(dataContext.lock);
+      while (ptr < end) {
+        auto ev = (const tgfx::inspect::FrameCaptureMessageItem*)ptr;
+        LOGI("type = %d， sizeof(ev) = %ld", ev->hdr.idx, sizeof(tgfx::inspect::FrameCaptureMessageItem));
+        if (!dispatchProcess(*ev, ptr)) {
+          queryTerminate();
+          CLOSE_WEB_EXEC;
+        }
+      }
+
+      {
+        std::lock_guard<std::mutex> lockNet(netWriteLock);
+        ++netWriteCnt;
+        netWriteCv.notify_one();
+      }
+
+      if (serverQuerySpaceLeft > 0 && !serverQueryQueuePrio.empty()) {
+        const auto toSend = std::min(serverQuerySpaceLeft, serverQueryQueuePrio.size());
+        WSSendMessage(webSock.get(), serverQueryQueuePrio.data(), toSend * ServerQueryPacketSize);
+        serverQuerySpaceLeft -= toSend;
+        if (toSend == serverQueryQueuePrio.size()) {
+          serverQueryQueuePrio.clear();
+        } else {
+          serverQueryQueuePrio.erase(serverQueryQueuePrio.begin(),
+                                     serverQueryQueuePrio.begin() + long(toSend));
+        }
+      }
+      if (serverQuerySpaceLeft > 0 && !serverQueryQueue.empty()) {
+        const auto toSend = std::min(serverQuerySpaceLeft, serverQueryQueue.size());
+        WSSendMessage(webSock.get(), serverQueryQueue.data(), toSend * ServerQueryPacketSize);
+        serverQuerySpaceLeft -= toSend;
+        if (toSend == serverQueryQueue.size()) {
+          serverQueryQueue.clear();
+        } else {
+          serverQueryQueue.erase(serverQueryQueue.begin(), serverQueryQueue.begin() + long(toSend));
+        }
+      }
+    }
+  }
+}
+
+void Worker::webWork() {
+  tgfx::Buffer lz4Buffer = {};
+  while (true) {
+    {
+      std::unique_lock<std::mutex> lock(netWriteLock);
+      netWriteCv.wait(
+          lock, [this] { return isShutDown.load(std::memory_order_relaxed) || netWriteCnt > 0; });
+      if (isShutDown.load(std::memory_order_relaxed)) {
+        CLOSE_NETWORK;
+      }
+      netWriteCnt--;
+    }
+
+    auto buf = dataBuffer + bufferOffset;
+    bool isLz4Encode = false;
+    uint64_t lz4Size = 0;
+    tgfx::Buffer buffer = {};
+    if (!WSRecvMessage(webSock.get(), buffer, 10)) {
+      CLOSE_NETWORK;
+    }
+    size_t offset = 0;
+    memcpy(&isLz4Encode, buffer.bytes(), sizeof(bool));
+    offset += sizeof(bool);
+    memcpy(&lz4Size, buffer.bytes() + offset, sizeof(uint64_t));
+    offset += sizeof(uint32_t);
+    LOGI("data size = %ld, allSize = %ld", lz4Size, buffer.size());
+    auto start = buffer.bytes();
+    for (size_t i = 0; i < sizeof(bool) + sizeof(uint32_t) + 10; ++i) {
+      printf("%X ", start[i]);
+      if (i % 10 == 0 && i != 0) {
+        printf("\n");
+      }
+    }
+    printf("\n");
+    if (lz4Buffer.size() < lz4Size) {
+      lz4Buffer.alloc(lz4Size);
+      if (lz4Buffer.isEmpty()) {
+        CLOSE_NETWORK;
+      }
+    }
+    memcpy(lz4Buffer.bytes(), buffer.bytes() + offset, lz4Size);
+    size_t size = lz4Size;
+    if (isLz4Encode) {
+      size = lz4Handler->decode(reinterpret_cast<uint8_t*>(buf), MaxDecodeBufferSize,
+                                lz4Buffer.bytes(), static_cast<size_t>(lz4Size));
+    } else {
+      memcpy(buf, lz4Buffer.bytes(), lz4Size);
+    }
+    {
+      std::lock_guard<std::mutex> lock(netReadLock);
+      netRead.push_back(NetBuffer{bufferOffset, size});
+      netReadCv.notify_one();
+    }
+
+    bufferOffset += size;
+    if (bufferOffset > tgfx::inspect::TargetFrameSize * 2) {
+      bufferOffset = 0;
+    }
+  }
+}
+
+bool Worker::webSocketHandshake() {
+  const size_t maxBuffer = 1024;
+  size_t bufferSize = maxBuffer;
+  char buffer[maxBuffer];
+  bool read = false;
+  while (bufferSize == maxBuffer) {
+    read = webSock->readMaxLength(buffer, bufferSize, 0);
+  }
+  if (!read) {
+    return false;
+  }
+  return SendHandshake(webSock.get(), buffer);
+}
+
 void Worker::newOpTask(std::shared_ptr<OpTaskData> opTask) {
   ++dataContext.opTaskCount;
 
@@ -405,7 +633,12 @@ void Worker::query(tgfx::inspect::ServerQuery type, uint64_t data, uint32_t extr
   tgfx::inspect::ServerQueryPacket query{type, data, extra};
   if (serverQuerySpaceLeft > 0 && serverQueryQueuePrio.empty() && serverQueryQueue.empty()) {
     serverQuerySpaceLeft--;
-    sock.sendData(&query, ServerQueryPacketSize);
+    if (sock.isValid()) {
+      sock.sendData(&query, ServerQueryPacketSize);
+    }
+    else {
+      WSSendMessage(webSock.get(), &query, ServerQueryPacketSize);
+    }
   } else if (IsQueryPrio(type)) {
     serverQueryQueuePrio.push_back(query);
   } else {
@@ -415,7 +648,12 @@ void Worker::query(tgfx::inspect::ServerQuery type, uint64_t data, uint32_t extr
 
 void Worker::queryTerminate() {
   tgfx::inspect::ServerQueryPacket query{tgfx::inspect::ServerQuery::Terminate, 0, 0};
-  sock.sendData(&query, ServerQueryPacketSize);
+  if (sock.isValid()) {
+    sock.sendData(&query, ServerQueryPacketSize);
+  }
+  else {
+    WSSendMessage(webSock.get(), &query, ServerQueryPacketSize);
+  }
 }
 
 bool Worker::dispatchProcess(const tgfx::inspect::FrameCaptureMessageItem& ev, const char*& ptr) {
@@ -545,6 +783,7 @@ static int64_t RefTime(int64_t& reference, int64_t delta) {
 
 void Worker::processOperateBegin(const tgfx::inspect::OperateBeginMessage& ev) {
   std::shared_ptr<OpTaskData> opTask(new OpTaskData);
+  LOGI("%s begin, time = %ld", OpTaskName[ev.type], ev.usTime);
   const auto start = tscTime(RefTime(refTime, ev.usTime));
   opTask->start = start;
   opTask->end = -1;
@@ -555,6 +794,7 @@ void Worker::processOperateBegin(const tgfx::inspect::OperateBeginMessage& ev) {
 
 void Worker::processOperateEnd(const tgfx::inspect::OperateEndMessage& ev) {
   auto& stack = dataContext.opTaskStack;
+  LOGI("%s end, time = %ld", OpTaskName[ev.type], ev.usTime);
   if (stack.empty()) {
     return;
   }

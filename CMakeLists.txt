@@ -14,6 +14,12 @@ set(TGFX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tgfx)
 set(ZSTD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zstd)
 set(INSPECTOR_COMMON_DIR ${TGFX_DIR}/src/inspect)
 
+if (CMAKE_OSX_ARCHITECTURES MATCHES "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "aarch64")
+    set(ARCH arm64)
+elseif (CMAKE_OSX_ARCHITECTURES MATCHES "x86_64" OR CMAKE_OSX_ARCHITECTURES MATCHES "amd64")
+    set(ARCH x64)
+endif ()
+
 if (NOT CMAKE_PREFIX_PATH)
     if (NOT EXISTS ${PROJECT_SOURCE_DIR}/QTCMAKE.cfg)
         file(WRITE ${PROJECT_SOURCE_DIR}/QTCMAKE.cfg
@@ -107,8 +113,8 @@ list(APPEND TGFX_INSPECTOR_LIBS ${INSPECTOR_VENDOR_STATIC_LIBRARIES})
 list(APPEND TGFX_INSPECTOR_DEFINE KDDW_FRONTEND_QTQUICK KDDW_FRONTEND_QT KDDW_QTGUI_TYPES)
 
 list(APPEND TGFX_INSPECTOR_INCLUDE ./third_party/KDDockWidgets/src/fwd_headers ./third_party/flatbuffers/include)
-
 add_executable(inspectorTool ${RC_FILES} ${TGFX_INSPECTOR_FILES} ${TGFX_INSPECTOR_COMMON_FILES} ${QT_RESOURCES})
+add_dependencies(inspectorTool inspector-vendor)
 target_include_directories(inspectorTool PUBLIC ${TGFX_INSPECTOR_SRC} ${TGFX_INSPECTOR_COMMON_INCLUDE})
 target_include_directories(inspectorTool SYSTEM PRIVATE ${TGFX_INSPECTOR_INCLUDE})
 target_compile_definitions(inspectorTool PUBLIC ${TGFX_INSPECTOR_DEFINE})

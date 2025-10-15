@@ -33,9 +33,12 @@ namespace inspector {
 using ReadTagHandler = void(DecodeStream* stream);
 static const std::unordered_map<TagType, std::function<ReadTagHandler>, EnumClassHash> readHanders =
     {
-        {TagType::NameMap, ReadNameMapTag}, {TagType::Frame, ReadFrameTag},
-        {TagType::OpTask, ReadOpTaskTag},   {TagType::Property, ReadPropertyTag},
-        {TagType::Texture, ReadTextureTag}, {TagType::VertexBuffer, ReadVertexBufferTag},
+        {TagType::NameMap, ReadNameMapTag},
+        {TagType::Frame, ReadFrameTag},
+        {TagType::OpTask, ReadOpTaskTag},
+        {TagType::Property, ReadPropertyTag},
+        {TagType::Texture, ReadTextureTag},
+        {TagType::VertexBuffer, ReadVertexBufferTag},
         {TagType::ShaderAndUniform, ReadShaderTextTag},
 };
 

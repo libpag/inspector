@@ -27,21 +27,6 @@
 #include "tgfx/gpu/opengl/qt/QGLWindow.h"
 
 namespace inspector {
-class TestTime {
- public:
-  explicit TestTime(const char* name) : time(tgfx::Clock::Now()), name(name) {
-  }
-
-  ~TestTime() {
-    auto costTime = tgfx::Clock::Now() - time;
-    LOGI("%s cost time: %lld us", name.c_str(), costTime);
-  }
-
- private:
-  int64_t time;
-  std::string name;
-};
-
 class MeshDrawer : public QQuickItem {
   Q_OBJECT
   Q_PROPERTY(Worker* worker READ getWorker WRITE setWorker)

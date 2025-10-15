@@ -38,8 +38,7 @@ void ReadVertexBufferTag(DecodeStream* stream) {
       meshInfo->hasColor = stream->readBoolean();
       meshInfo->hasSubset = stream->readBoolean();
       meshData->info = std::move(meshInfo);
-    }
-    else {
+    } else {
       auto meshInfo = std::make_shared<tgfx::inspect::RRectMeshInfo>();
       meshInfo->rectCount = stream->readEncodedUint32();
       meshInfo->drawOpPtr = stream->readEncodedUint64();
@@ -53,8 +52,8 @@ void ReadVertexBufferTag(DecodeStream* stream) {
   }
 }
 
-TagType WriteVertexBufferTag(
-    EncodeStream* stream, std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas) {
+TagType WriteVertexBufferTag(EncodeStream* stream,
+                             std::unordered_map<uint64_t, std::shared_ptr<MeshData>>* vertexDatas) {
   stream->writeEncodedUint32(static_cast<uint32_t>(vertexDatas->size()));
   for (const auto& vertexBuffer : *vertexDatas) {
     stream->writeEncodedUint64(vertexBuffer.first);
@@ -62,16 +61,15 @@ TagType WriteVertexBufferTag(
     stream->writeUint8(static_cast<uint8_t>(meshData->type));
     if (meshData->type == tgfx::inspect::VertexProviderType::RectsVertexProvider) {
       auto meshInfo = std::static_pointer_cast<tgfx::inspect::RectMeshInfo>(meshData->info);
-      stream->writeEncodedUint32(meshInfo->rectCount);
+      stream->writeEncodedUint32(static_cast<uint32_t>(meshInfo->rectCount));
       stream->writeEncodedUint64(meshInfo->drawOpPtr);
       stream->writeUint8(meshInfo->aaType);
       stream->writeBoolean(meshInfo->hasUVCoord);
       stream->writeBoolean(meshInfo->hasColor);
       stream->writeBoolean(meshInfo->hasSubset);
-    }
-    else {
+    } else {
       auto meshInfo = std::static_pointer_cast<tgfx::inspect::RRectMeshInfo>(meshData->info);
-      stream->writeEncodedUint32(meshInfo->rectCount);
+      stream->writeEncodedUint32(static_cast<uint32_t>(meshInfo->rectCount));
       stream->writeEncodedUint64(meshInfo->drawOpPtr);
       stream->writeBoolean(meshInfo->hasColor);
       stream->writeBoolean(meshInfo->useScale);

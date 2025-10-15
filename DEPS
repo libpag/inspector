@@ -22,9 +22,16 @@
     },
     {
       "url": "https://github.com/Tencent/tgfx.git",
-      "commit": "4d7df5ee16a7e4dd4878a9c003a8e144d8db3866",
+      "commit": "b04d02787bb2e460d7c5e821cef68930961e81fe",
       "dir": "tgfx"
     }
+    ],
+    "mac": [
+      {
+        "url": "https://github.com/create-dmg/create-dmg.git",
+        "commit": "118f131aa57c1278aca806eb37cf5021e9064198",
+        "dir": "tools/create-dmg"
+      }
     ]
   },
   "actions": {

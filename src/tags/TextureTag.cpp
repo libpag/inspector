@@ -67,7 +67,7 @@ TagType WriteTextureTag(EncodeStream* stream, DataContext* context) {
 
   const auto& imageDatas = context->images;
   stream->writeEncodedUint32(static_cast<uint32_t>(imageDatas.size()));
-  for (const auto& imageData: imageDatas) {
+  for (const auto& imageData : imageDatas) {
     stream->writeEncodedUint64(imageData.first);
     const auto& imageTexture = imageData.second;
     stream->writeBoolean(imageTexture->isInput);

@@ -114,6 +114,7 @@ class StartView : public QObject {
   Q_PROPERTY(
       QVector<QObject*> layerTreeClientItems READ getLayerTreeClientItems NOTIFY clientItemsChanged)
   Q_PROPERTY(QString lastOpenFile READ getLastOpenFile NOTIFY lastOpenFileChanged)
+  Q_PROPERTY(QString webServerFailedMessage READ getWebServerFailedMessage)
 
  public:
   explicit StartView(QObject* parent = nullptr);
@@ -122,8 +123,13 @@ class StartView : public QObject {
   QStringList getRecentFiles() const {
     return recentFiles;
   }
+
   QString getLastOpenFile() const {
     return lastOpenFile;
+  }
+
+  QString getWebServerFailedMessage() const {
+    return webServerFiledMessage;
   }
 
   ///* file items *///
@@ -132,15 +138,9 @@ class StartView : public QObject {
   Q_INVOKABLE void openFile(const QUrl& fPath);
   Q_INVOKABLE void addRecentFile(const QString& fPath);
   Q_INVOKABLE void clearRecentFiles();
-  Q_INVOKABLE QString getFileNameFromPath(const QString& fPath) {
-    return QFileInfo(fPath).fileName();
-  }
-  Q_INVOKABLE QString getDirectoryFromPath(const QString& fPath) {
-    return QFileInfo(fPath).path();
-  }
-  ///* client items *///
   Q_INVOKABLE QVector<QObject*> getFrameCaptureClientItems() const;
   Q_INVOKABLE QVector<QObject*> getLayerTreeClientItems() const;
+  Q_INVOKABLE bool openWebSocketServer(const QString& port);
   Q_INVOKABLE void connectToClient(QObject* object);
   Q_INVOKABLE void connectToClientByLayerInspector(QObject* object);
   Q_INVOKABLE void showStartView();
@@ -164,15 +164,16 @@ class StartView : public QObject {
   void updateBroadcastClients();
 
  private:
-  QString lastOpenFile;
-  QStringList recentFiles;
-  QList<FileItem*> fileItems;
-  std::mutex resolvLock;
+  QString lastOpenFile = "";
+  QString webServerFiledMessage = "";
+  QStringList recentFiles = {};
+  QList<FileItem*> fileItems = {};
+  std::mutex resolvLock = {};
   uint16_t port = 8086;
-  ResolvService resolv;
-  std::unique_ptr<tgfx::inspect::UDPListen> broadcastListen;
-  std::unordered_map<uint64_t, ClientData*> clients;
-  std::unordered_map<std::string, std::string> resolvMap;
+  ResolvService resolv = {};
+  std::unique_ptr<tgfx::inspect::UDPListen> broadcastListen = nullptr;
+  std::unordered_map<uint64_t, ClientData*> clients = {};
+  std::unordered_map<std::string, std::string> resolvMap = {};
 
   QTimer* broadcastTimer = nullptr;
   QQmlApplicationEngine* qmlEngine = nullptr;

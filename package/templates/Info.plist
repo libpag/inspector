@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>inspector</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>inspectorIcon</string>
+			<key>CFBundleTypeName</key>
+			<string>Inspector File Format</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+		</dict>
+	</array>
+	<key>CFBundleExecutable</key>
+	<string>Inspector</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Created by Inspector Team</string>
+	<key>CFBundleIconFile</key>
+	<string>appIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.tencent.libpag.inspector</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.12</string>
+	<key>NOTE</key>
+	<string></string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2017-present Tencent. All rights reserved.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	<key>SUPublicDSAKeyFile</key>
+	<string></string>
+	<key>SUPublicEDKey</key>
+	<string>UVl4rEDle9tT48LtonRXDADX92s2PsXKDqsB4SA6Fr8=</string>
+</dict>
+</plist>

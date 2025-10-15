@@ -156,8 +156,8 @@ std::shared_ptr<IndicesProvider> IndicesProvider::MakeFrom(
                                                  meshInfo->rectCount, VerticesPerAAQuad);
   }
   return std::make_shared<RectIndicesProvider>(NonAAQuadIndexPattern,
-                                                RectIndicesProvider::IndicesPerNonAAQuad,
-                                                meshInfo->rectCount, VerticesPerNonAAQuad);
+                                               RectIndicesProvider::IndicesPerNonAAQuad,
+                                               meshInfo->rectCount, VerticesPerNonAAQuad);
 }
 
 }  // namespace inspector

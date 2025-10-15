@@ -38,6 +38,7 @@ class Worker : public QObject {
     size_t size = 0;
   };
 
+  Worker(uint16_t webPort);
   explicit Worker(std::string& filePath);
   Worker(const char* addr, uint16_t port);
   ~Worker() override;
@@ -65,6 +66,9 @@ class Worker : public QObject {
   void shutdown();
   void exec();
   void netWork();
+  void execWeb();
+  void webWork();
+  bool webSocketHandshake();
 
   void newOpTask(std::shared_ptr<OpTaskData> opTask);
   void query(tgfx::inspect::ServerQuery type, uint64_t data, uint32_t extra = 0);
@@ -106,6 +110,7 @@ class Worker : public QObject {
 
  private:
   tgfx::inspect::Socket sock = {};
+  std::shared_ptr<tgfx::inspect::Socket> webSock = nullptr;
   std::string addr = {};
   uint16_t port = 0;
 

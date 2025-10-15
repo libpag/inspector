@@ -17,9 +17,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "MeshDrawer.h"
+#include <QOpenGLExtraFunctions>
 #include <QSGFlatColorMaterial>
 #include <QSGImageNode>
-#include <QOpenGLExtraFunctions>
 
 namespace inspector {
 MeshDrawer::MeshDrawer(QQuickItem* parent) : QQuickItem(parent), appHost(AppHost::GetAppHost()) {
@@ -78,16 +78,14 @@ void MeshDrawer::drawWireFrame(QSGNode* root) {
   int vertexCount = 0;
   if (indices.empty()) {
     vertexCount = static_cast<int>(postionData.size());
-  }
-  else {
+  } else {
     if (indices.size() % 3 > 0) {
       return;
     }
     auto indicesSize = static_cast<int>(indices.size());
     vertexCount = indicesSize * 2;
   }
-  auto geometry =
-      new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), vertexCount);
+  auto geometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), vertexCount);
   geometry->setDrawingMode(QSGGeometry::DrawLines);
   geometry->setLineWidth(1.f);
   lineNode->setGeometry(geometry);
@@ -172,25 +170,24 @@ void MeshDrawer::drawSelectPoint(QSGNode* root) {
   tgfx::Point selectPoint = {};
   if (indices.empty()) {
     matrix.mapXY(postionData[select][0], postionData[select][1], &selectPoint);
-  }
-  else {
+  } else {
     auto index = indices[select];
     matrix.mapXY(postionData[index][0], postionData[index][1], &selectPoint);
   }
-  
+
   const auto rectSize = 8.f;
-  const auto half = rectSize /  2;
+  const auto half = rectSize / 2;
   auto rectNode = new QSGGeometryNode();
   auto rectGeometry = new QSGGeometry(QSGGeometry::defaultAttributes_Point2D(), 6);
   rectGeometry->setDrawingMode(GL_TRIANGLES);
   rectNode->setGeometry(rectGeometry);
   rectNode->setFlag(QSGNode::OwnsGeometry);
-  
+
   auto matRect = new QSGFlatColorMaterial();
   matRect->setColor(QColor(0, 255, 0, 220));
   rectNode->setMaterial(matRect);
   rectNode->setFlag(QSGNode::OwnsMaterial);
-  
+
   QSGGeometry::Point2D* vdata = rectGeometry->vertexDataAsPoint2D();
   vdata[0].x = float(selectPoint.x - half);
   vdata[0].y = float(selectPoint.y - half);

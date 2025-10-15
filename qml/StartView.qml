@@ -55,7 +55,7 @@ ApplicationWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Open File"
                         color: "#DDDDDD"
-                        font.pixelSize: 14
+                        font.pixelSize: 18
                     }
 
                     Item {
@@ -109,7 +109,7 @@ ApplicationWindow {
                     anchors.topMargin: 5
                     text: "Recent File"
                     color: "#DDDDDD"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                 }
 
                 ListView {
@@ -196,7 +196,7 @@ ApplicationWindow {
                     anchors.topMargin: 5
                     text: "Drag Open File"
                     color: "#DDDDDD"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                 }
 
                 Rectangle {
@@ -223,7 +223,7 @@ ApplicationWindow {
                         anchors.verticalCenterOffset: 50
                         text: "Drag file to here"
                         color: "#44ffffff"
-                        font.pixelSize: 14
+                        font.pixelSize: 18
                     }
 
                     DropArea {
@@ -274,7 +274,7 @@ ApplicationWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Start Connection"
                     color: "#DDDDDD"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                 }
             }
         }
@@ -298,7 +298,7 @@ ApplicationWindow {
                     anchors.topMargin: 5
                     text: "Clients"
                     color: "#DDDDDD"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                 }
 
                 ListView {
@@ -461,7 +461,7 @@ ApplicationWindow {
                         }
                     }
                     color: "#44ffffff"
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                 }
             }
 
@@ -479,7 +479,7 @@ ApplicationWindow {
 
 
                     Rectangle {
-                        width: 100
+                        width: 120
                         height: 120
                         color: selectedIndex === 0 ? "#6b6b6b" : "transparent"
                         radius: 5
@@ -497,7 +497,7 @@ ApplicationWindow {
                             Text {
                                 text: "FrameCapture"
                                 color: "#DDDDDD"
-                                font.pixelSize: 14
+                                font.pixelSize: 18
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
@@ -509,7 +509,7 @@ ApplicationWindow {
                     }
 
                     Rectangle {
-                        width: 100
+                        width: 120
                         height: 120
                         color: selectedIndex === 1 ? "#6b6b6b" : "transparent"
                         radius: 5
@@ -526,7 +526,7 @@ ApplicationWindow {
                             Text {
                                 text: "LayerTree"
                                 color: "#DDDDDD"
-                                font.pixelSize: 14
+                                font.pixelSize: 18
                                 anchors.horizontalCenter: parent.horizontalCenter
                             }
                         }
@@ -552,10 +552,77 @@ ApplicationWindow {
                 anchors.rightMargin: 20
                 spacing: 10
 
+                Rectangle {
+                    width: webPortText.width
+                    height: 30
+                    color: "#535353"
+
+                    Text {
+                        id: webPortText
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Web port: "
+                        color: "#DDDDDD"
+                        font.pixelSize: 18
+                    }
+                }
+
+                Rectangle {
+                    id: intputPort
+                    width: 100
+                    height: 30
+                    radius: 3
+                    color: "#383838"
+
+                    TextInput {
+                        id: textInputPort
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        verticalAlignment: TextInput.AlignVCenter
+                        font.pixelSize: 18
+                        color: "#DDDDDD"
+                        text: "8087"
+                    }
+                }
+
+                Rectangle {
+                    id: webSocketServer
+                    width: webSocketServerText.width + 20
+                    height: 30
+                    radius: 3
+                    color: webSocketServerArea.containsMouse ? "#444444" : "#535353"
+                    border.color: "#383838"
+                    border.width: 1
+
+                    Text {
+                        id: webSocketServerText
+                        anchors.centerIn: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        text: "Open webSocket Server"
+                        color: "#DDDDDD"
+                        font.pixelSize: 18
+                    }
+
+                    MouseArea {
+                        id: webSocketServerArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            if (selectedIndex === 0) {
+                                startViewModel.openWebSocketServer(textInputPort.text)
+                            }
+                            else if (selectedIndex === 1) {
+                            }
+                        }
+                    }
+                }
 
                 Rectangle {
                     id: cancelBtn
-                    width: 100
+                    width: cancelText.width + 20
                     height: 30
                     radius: 3
                     color: cancelArea.containsMouse ? "#444444" : "#535353"
@@ -563,10 +630,13 @@ ApplicationWindow {
                     border.width: 1
 
                     Text {
+                        id: cancelText
                         anchors.centerIn: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
                         text: "Cancel"
                         color: "#DDDDDD"
-                        font.pixelSize: 14
+                        font.pixelSize: 18
                     }
 
                     MouseArea {
@@ -577,10 +647,9 @@ ApplicationWindow {
                     }
                 }
 
-
                 Rectangle {
                     id: launchBtn
-                    width: 100
+                    width: launchText.width + 20
                     height: 30
                     radius: 3
                     property bool canLaunch:
@@ -602,10 +671,13 @@ ApplicationWindow {
                     opacity: canLaunch ? 1.0 : 0.6
 
                     Text {
+                        id: launchText
                         anchors.centerIn: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
                         text: "Launch"
                         color: "#DDDDDD"
-                        font.pixelSize: 14
+                        font.pixelSize: 18
                     }
 
                     MouseArea {
@@ -614,13 +686,13 @@ ApplicationWindow {
                         hoverEnabled: true
                         enabled: launchBtn.canLaunch
                         onClicked: {
-                            if(selectedIndex === 0 && selectedFilePathIndex !== -1){
+                            if (selectedIndex === 0 && selectedFilePathIndex !== -1){
                                 var selectedFilePath = startViewModel.fileItems[selectedFilePathIndex].filesPath
                                 startViewModel.openFile(selectedFilePath)
                             }
                             else if(selectedClientIndex !== -1){
                                 var selectedClient;
-                                if(selectedIndex === 0){
+                                if (selectedIndex === 0){
                                     selectedClient = startViewModel.frameCaptureClientItems[selectedClientIndex]
                                     startViewModel.connectToClient(selectedClient)
                                 } else if(selectedIndex === 1){

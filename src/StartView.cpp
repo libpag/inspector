@@ -129,6 +129,26 @@ QVector<QObject*> StartView::getLayerTreeClientItems() const {
   return clientDatas;
 }
 
+bool StartView::openWebSocketServer(const QString& port) {
+  static QRegularExpression regex("^-?\\d+$");
+  if (!regex.match(port).hasMatch()) {
+    webServerFiledMessage = "Error port! Please input numbers";
+    return false;
+  }
+  auto webPort = port.toUShort();
+  if (inspectorView) {
+    connect(inspectorView, &InspectorView::destroyed, this, [&, webPort]() {
+      inspectorView = new InspectorView(webPort, 1920, this);
+      connect(inspectorView, &InspectorView::viewHide, [this]() { showStartView(); });
+    });
+    inspectorView->deleteLater();
+  } else {
+    inspectorView = new InspectorView(webPort, 1920, this);
+    connect(inspectorView, &InspectorView::viewHide, [this]() { showStartView(); });
+  }
+  return true;
+}
+
 void StartView::connectToClient(QObject* object) {
   auto client = dynamic_cast<ClientData*>(object);
   if (client) {

@@ -35,6 +35,7 @@ class ResolvService {
   };
 
  public:
+  ResolvService() = default;
   explicit ResolvService(uint16_t port);
 
   ~ResolvService();
@@ -45,11 +46,11 @@ class ResolvService {
   void worker();
 
  private:
-  std::atomic<bool> exit;
-  std::mutex mutex;
-  std::condition_variable conditionVariable;
-  std::vector<QueueItem> queue;
-  uint16_t port;
-  std::thread thread;
+  std::atomic<bool> exit = false;
+  std::mutex mutex = {};
+  std::condition_variable conditionVariable = {};
+  std::vector<QueueItem> queue = {};
+  uint16_t port = 0;
+  std::thread thread = {};
 };
 }  // namespace inspector

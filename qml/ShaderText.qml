@@ -44,7 +44,7 @@ Rectangle {
                 Label {
                     id: shaderLabel
                     anchors.verticalCenter: parent.verticalCenter
-                    font.pixelSize: 14
+                    font.pixelSize: 18
                     color: "#DDDDDD"
                 }
             }
@@ -74,7 +74,7 @@ Rectangle {
                         id: shaderText
                         width: parent.width
                         height: parent.height
-                        font.pixelSize: 14
+                        font.pixelSize: 18
                         color: "#DDDDDD"
                     }
                 }

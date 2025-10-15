@@ -23,36 +23,12 @@ namespace inspector {
 
 class DefaultLZ4DecompressionHandler : public LZ4DecompressionHandler {
  public:
-  DefaultLZ4DecompressionHandler()
-      : lz4EncodeStream(LZ4_createStream()), lz4DecodeStream(LZ4_createStreamDecode()) {
-    LZ4_setStreamDecode(lz4DecodeStream, nullptr, 0);
-  }
-
-  ~DefaultLZ4DecompressionHandler() override {
-    if (lz4DecodeStream) {
-      LZ4_freeStreamDecode(lz4DecodeStream);
-      lz4DecodeStream = nullptr;
-    }
-    if (lz4EncodeStream) {
-      LZ4_freeStream(lz4EncodeStream);
-      lz4EncodeStream = nullptr;
-    }
-  }
-
   size_t decode(uint8_t* dstBuffer, size_t dstSize, const uint8_t* srcBuffer,
                 size_t srcSize) const override {
-    return static_cast<size_t>(LZ4_decompress_safe_continue(
-        lz4DecodeStream, reinterpret_cast<const char*>(srcBuffer),
-        reinterpret_cast<char*>(dstBuffer), static_cast<int>(srcSize), static_cast<int>(dstSize)));
+    return static_cast<size_t>(LZ4_decompress_safe(
+        reinterpret_cast<const char*>(srcBuffer), reinterpret_cast<char*>(dstBuffer),
+        static_cast<int>(srcSize), static_cast<int>(dstSize)));
   }
-
-  void reset() override {
-    LZ4_resetStream(lz4EncodeStream);
-  }
-
- private:
-  LZ4_stream_t* lz4EncodeStream = nullptr;
-  LZ4_streamDecode_t* lz4DecodeStream = nullptr;
 };
 
 std::unique_ptr<LZ4DecompressionHandler> LZ4DecompressionHandler::Make() {

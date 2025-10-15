@@ -37,6 +37,7 @@ class InspectorView : public QObject {
   Q_PROPERTY(bool isOpenFile READ getIsOpenFile CONSTANT)
   Q_PROPERTY(bool hasSaveFilePath READ getHasSaveFilePath CONSTANT)
  public:
+  InspectorView(uint16_t webPort, int width, QObject* parent = nullptr);
   InspectorView(std::string filePath, int width, QObject* parent = nullptr);
   InspectorView(ClientData* clientData, int width, QObject* parent = nullptr);
   ~InspectorView() override;

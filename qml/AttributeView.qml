@@ -83,7 +83,7 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                                 text: modelData.name
                                 color: "#dddddd"
-                                font.pixelSize: 14
+                                font.pixelSize: 18
                                 elide: Text.ElideRight
                             }
 
@@ -93,7 +93,7 @@ Item {
                                 verticalAlignment: Text.AlignVCenter
                                 text: modelData.value
                                 color: "#dddddd"
-                                font.pixelSize: 14
+                                font.pixelSize: 18
                                 elide: Text.ElideRight
                             }
                         }

@@ -16,7 +16,7 @@ Rectangle {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
         color: "#DDDDDD"
-        font.pixelSize: 14
+        font.pixelSize: 18
         elide: Text.ElideRight
     }
 }

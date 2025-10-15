@@ -22,7 +22,7 @@ Column {
             leftPadding: 10
             anchors.verticalCenter: parent.verticalCenter
             anchors.horizontalCenter: parent.horizontalCenter
-            font.pixelSize: 14
+            font.pixelSize: 18
             color: "#DDDDDD"
             elide: Text.ElideRight
         }

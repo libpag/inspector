@@ -17,7 +17,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <unordered_map>
-
 #include "DataContext.h"
 #include "DecodeStream.h"
 #include "InspectorEvent.h"

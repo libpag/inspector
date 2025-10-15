@@ -25,4 +25,4 @@ namespace inspector {
 void ReadShaderTextTag(DecodeStream* stream);
 
 TagType WriteShaderTextTag(EncodeStream* stream, DataContext* context);
-}
+}  // namespace inspector

@@ -50,6 +50,12 @@ class CustomViewFactory : public KDDockWidgets::QtQuick::ViewFactory {
   }
 };
 
+InspectorView::InspectorView(uint16_t webPort, int width, QObject* parent)
+    : QObject(parent), width(width), isOpenFile(true), worker(webPort) {
+  initView();
+  failedCreateWorker();
+}
+
 InspectorView::InspectorView(std::string filePath, int width, QObject* parent)
     : QObject(parent), width(width), isOpenFile(true), worker(filePath) {
   initView();
